@@ -401,6 +401,7 @@ function build() {
       for (const s of dr.sprites) s.visible = false;
     }
     S3.dropT0 = performance.now() / 1000; stepDrops(0);
+    try { if (typeof Sounds !== 'undefined' && Sounds.buildHold) Sounds.buildHold(Math.max(...S3.drops.map(d => d.end)) - .2); } catch (e) { }   // Bau-Geräusch läuft bis zum letzten Stein
   }
   // Kamera: Anflug von schräg oben
   const asp = box.clientWidth / Math.max(1, box.clientHeight), target = new THREE.Vector3(0, 0, 0), dist = Math.max(W, D) * (port ? 1.95 : 1.05 * Math.max(1, 1.8 / asp));   // Abstand passt sich dem Fenster an (auch gedreht)

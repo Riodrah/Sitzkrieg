@@ -34,7 +34,20 @@ const Sounds=(()=>{
     if(NO_STACK[name]){ busy[name]=true; src.onended=()=>{ busy[name]=false; }; } const g=ctx.createGain(); g.gain.value=SOUND_VOL[name]*(FULL_VOL[name]?1:MASTER_VOL);
     src.connect(g).connect(ctx.destination); src.start();
   }
-  return {play};
+  // Bau-Geräusch bei neuer Karte: läuft in Schleife, bis die 3D-Karte fertig zusammengebaut ist (ohne 3D: einmal durch)
+  let bLoop=null, bTimer=null;
+  function buildStop(fade=.35){ clearTimeout(bTimer); bTimer=null; const l=bLoop; bLoop=null; if(!l) return;
+    try{ const t=ctx.currentTime; l.g.gain.cancelScheduledValues(t); l.g.gain.setValueAtTime(l.g.gain.value,t); l.g.gain.linearRampToValueAtTime(0,t+fade); l.src.stop(t+fade+.05); }catch(e){} }
+  function buildStart(){
+    if(MASTER_VOL<=0) return; buildStop(.05);
+    if(!ctx||!buf.bauen){ play('bauen'); return; }   // noch nicht geladen: einfach einmal abspielen
+    if(ctx.state==='suspended') ctx.resume();
+    const src=ctx.createBufferSource(); src.buffer=buf.bauen; src.loop=true; const g=ctx.createGain(); g.gain.value=SOUND_VOL.bauen*MASTER_VOL;
+    src.connect(g).connect(ctx.destination); src.start(); bLoop={src,g};
+    bTimer=setTimeout(()=>buildStop(),buf.bauen.duration*1000);   // ohne 3D-Aufbau: nach einem Durchlauf aus
+  }
+  function buildHold(sec){ if(!bLoop) return; clearTimeout(bTimer); bTimer=setTimeout(()=>buildStop(),sec*1000); }   // 3D-Karte: so lange halten, wie der Aufbau dauert
+  return {play,buildStart,buildStop,buildHold};
 })();
 // Lautstärkeregler
 (function(){
@@ -58,7 +71,7 @@ document.addEventListener('click',e=>{
   let n='button';
   if(el.closest('.tabs')) n='menu';
   // Neue Karte: Geräusch vom Klemmbaustein-Bauen
-  if(el.id==='gen'||(el.id==='fab'&&!document.body.classList.contains('on-mission'))){ Sounds.play('bauen'); return; }
+  if(el.id==='gen'||(el.id==='fab'&&!document.body.classList.contains('on-mission'))){ Sounds.buildStart(); return; }
   if(el.id==='fab'||el.id==='army-gen'||el.id==='dp-roll'){ Sounds.play('dice', nextDiceVariant()); return; }
   if(el.id==='rot'){ Sounds.play('chair', nextVariant('chair')); return; }
      // Kampfflieger Ja: Flugzeug fliegt vorbei   // Karte drehen: Stuhlrücken   // dice1.mp3 in einer zufälligen Tonhöhen-Variante
