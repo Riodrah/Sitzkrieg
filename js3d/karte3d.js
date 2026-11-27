@@ -376,13 +376,21 @@ function build() {
   });
   // Lebendige Details einsammeln: wiegende Bäume, Suchscheinwerfer, Windsack, Schaumkronen, Rauch aus dem Lok-Schornstein
   board.updateMatrixWorld(true);
+  // Lebendige Details zuerst einsammeln (Lage des Schornsteins, bevor die Aufbau-Animation die Steine anhebt)
+  const L = S3.live, puffGeo = new THREE.CylinderGeometry(.06, .06, .055, 14), studGeo = new THREE.CylinderGeometry(.033, .033, .03, 10);
+  board.traverse(o => {
+    const u = o.userData; if (u.sway != null) L.sway.push(o); if (u.sweep) L.sweep.push(o); if (u.flutter) L.flutter.push(o); if (u.wave) L.wave.push(o);
+    if (u.chimney) { let p = o; while (p && p.userData.pi == null) p = p.parent; if (!p) return;
+      const top = p.worldToLocal(o.getWorldPosition(new THREE.Vector3())); top.y += .03;
+      for (let i = 0; i < 9; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066][i % 3], m = G(); m.userData.puff = true; m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); m.visible = false; p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / 9, wob: Math.random() * 6 }); } }
+  });
   // Neue Karte: jedes Feld setzt sich Stein für Stein zusammen (von unten nach oben, jeder Stein fällt einzeln von oben ein)
   if (S3.drops.length && matchMedia('(prefers-reduced-motion:reduce)').matches) S3.drops = [];
   if (S3.drops.length) {
     const wp = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3();
     for (const dr of S3.drops) {
       const pcs = []; dr.sprites = [];
-      (function walk(o) { for (const c of o.children) { if (c.isSprite) { dr.sprites.push(c); continue; } if (c.userData.brick || c.isMesh) pcs.push(c); else walk(c); } })(dr.g);
+      (function walk(o) { for (const c of o.children) { if (c.userData.puff) continue; if (c.isSprite) { dr.sprites.push(c); continue; } if (c.userData.brick || c.isMesh) pcs.push(c); else walk(c); } })(dr.g);
       for (const c of pcs) c.userData._y = c.getWorldPosition(wp).y;
       pcs.sort((p, q) => p.userData._y - q.userData._y);
       const n = pcs.length, span = Math.min(1.5, .4 + n * .005);
@@ -394,13 +402,6 @@ function build() {
     }
     S3.dropT0 = performance.now() / 1000; stepDrops(0);
   }
-  const L = S3.live, puffGeo = new THREE.CylinderGeometry(.06, .06, .055, 14), studGeo = new THREE.CylinderGeometry(.033, .033, .03, 10);
-  board.traverse(o => {
-    const u = o.userData; if (u.sway != null) L.sway.push(o); if (u.sweep) L.sweep.push(o); if (u.flutter) L.flutter.push(o); if (u.wave) L.wave.push(o);
-    if (u.chimney) { let p = o; while (p && p.userData.pi == null) p = p.parent; if (!p) return;
-      const top = p.worldToLocal(o.getWorldPosition(new THREE.Vector3())); top.y += .03;
-      for (let i = 0; i < 9; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066][i % 3], m = G(); m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / 9, wob: Math.random() * 6 }); } }
-  });
   // Kamera: Anflug von schräg oben
   const asp = box.clientWidth / Math.max(1, box.clientHeight), target = new THREE.Vector3(0, 0, 0), dist = Math.max(W, D) * (port ? 1.95 : 1.05 * Math.max(1, 1.8 / asp));   // Abstand passt sich dem Fenster an (auch gedreht)
   const endPos = port ? new THREE.Vector3(0, dist * .66, dist * .56) : new THREE.Vector3(0, dist * .62, dist * .62);
