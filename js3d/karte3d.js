@@ -118,7 +118,9 @@ function build() {
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
     if (oi >= 0) { const f = flag(g, .02); f.scale.setScalar(1.35); S3.flags.push(f); const o = ms.objInfo[oi];
       const tg = tag('⚑ ' + (o.flex ? o.name : 'Ziel'), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
-      if (o.flex && o.name === 'Artilleriegeschütz') { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.3); gun.position.set(-.15, .02, .35); gun.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(gun); } }   // Geschütz zielt zur Kartenmitte
+      if (o.flex && o.name === 'Artilleriegeschütz') {   // Batterie: drei Geschütze versetzt wie im echten Aufbau, zielen zur Kartenmitte
+        const bat = G(); bat.position.set(-.15, .02, .1); bat.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(bat);
+        for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } } }
     if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#e2b33a', '#1b1b14'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;
     g.userData.pi = pi; g.userData.tap = true;
