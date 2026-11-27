@@ -35,16 +35,25 @@ const Sounds=(()=>{
     src.connect(g).connect(ctx.destination); src.start();
   }
   // Bau-Geräusch bei neuer Karte: läuft in Schleife, bis die 3D-Karte fertig zusammengebaut ist (ohne 3D: einmal durch)
+  // Durchläufe überlappen sich stark (weich ein- und ausgeblendet, leicht andere Tonhöhe): ein durchgehendes Klackern ohne Lücke
   let bLoop=null, bTimer=null;
-  function buildStop(fade=.35){ clearTimeout(bTimer); bTimer=null; const l=bLoop; bLoop=null; if(!l) return;
-    try{ const t=ctx.currentTime; l.g.gain.cancelScheduledValues(t); l.g.gain.setValueAtTime(l.g.gain.value,t); l.g.gain.linearRampToValueAtTime(0,t+fade); l.src.stop(t+fade+.05); }catch(e){} }
+  function buildStop(fade=.35){ clearTimeout(bTimer); bTimer=null; const l=bLoop; bLoop=null; if(!l) return; clearInterval(l.iv);
+    try{ const t=ctx.currentTime; l.g.gain.cancelScheduledValues(t); l.g.gain.setValueAtTime(l.g.gain.value,t); l.g.gain.linearRampToValueAtTime(0,t+fade); for(const s of l.srcs) try{ s.stop(t+fade+.05); }catch(e){} }catch(e){} }
   function buildStart(){
     if(MASTER_VOL<=0) return; buildStop(.05);
     if(!ctx||!buf.bauen){ play('bauen'); return; }   // noch nicht geladen: einfach einmal abspielen
     if(ctx.state==='suspended') ctx.resume();
-    const src=ctx.createBufferSource(); src.buffer=buf.bauen; src.loop=true; const g=ctx.createGain(); g.gain.value=SOUND_VOL.bauen*MASTER_VOL;
-    src.connect(g).connect(ctx.destination); src.start(); bLoop={src,g};
-    bTimer=setTimeout(()=>buildStop(),buf.bauen.duration*1000);   // ohne 3D-Aufbau: nach einem Durchlauf aus
+    const x=buf.bauen;
+    if(x._lead==null){ const d=x.getChannelData(0); let a=0,b=d.length-1; while(a<d.length&&Math.abs(d[a])<.02) a++; while(b>a&&Math.abs(d[b])<.02) b--; x._lead=a/x.sampleRate; x._len=(b-a)/x.sampleRate; }   // Stille am Anfang/Ende abschneiden
+    const D=x._len, STEP=D*.3, XF=Math.min(.2,D*.12);   // nach knapp einem Drittel setzt schon der nächste Durchlauf ein (meist drei gleichzeitig)
+    const g=ctx.createGain(); g.gain.value=SOUND_VOL.bauen*MASTER_VOL*.6; g.connect(ctx.destination);   // mehrere Durchläufe gleichzeitig: etwas leiser
+    const l={g,srcs:[],next:ctx.currentTime,iv:null}; bLoop=l;
+    const one=t=>{ const s=ctx.createBufferSource(); s.buffer=x; s.playbackRate.value=.96+Math.random()*.08; const e=ctx.createGain();
+      e.gain.setValueAtTime(0,t); e.gain.linearRampToValueAtTime(1,t+XF); e.gain.setValueAtTime(1,t+D-XF); e.gain.linearRampToValueAtTime(0,t+D);
+      s.connect(e).connect(g); s.start(t,x._lead); s.stop(t+D+.05); l.srcs.push(s); s.onended=()=>{ const i=l.srcs.indexOf(s); if(i>=0) l.srcs.splice(i,1); }; };
+    const pump=()=>{ if(bLoop!==l) return; while(l.next<ctx.currentTime+.6){ one(l.next); l.next+=STEP; } };   // immer etwas im Voraus planen
+    pump(); l.iv=setInterval(pump,150);
+    bTimer=setTimeout(()=>buildStop(),D*1000);   // ohne 3D-Aufbau: nach einem Durchlauf aus
   }
   function buildHold(sec){ if(!bLoop) return; clearTimeout(bTimer); bTimer=setTimeout(()=>buildStop(),sec*1000); }   // 3D-Karte: so lange halten, wie der Aufbau dauert
   return {play,buildStart,buildStop,buildHold};

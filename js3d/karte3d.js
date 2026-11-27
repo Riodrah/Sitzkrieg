@@ -160,12 +160,15 @@ export function wreck(p, x, z, ry, s = .3, smokes = null) {
   for (const [bx, bz, c] of [[-.4, .75, SA], [.85, -.6, GR], [-1.4, .5, SA], [-.1, -1.5, GR]]) brick(w, .2, .06, .14, c, bx, .03, bz, { rot: [0, R() * 3, 0] });
   // 7) Rauch aus runden 1x1-Steinen über der Bruchstelle
   const puffGeo = new THREE.CylinderGeometry(.11, .11, .1, 18), studGeo = new THREE.CylinderGeometry(.06, .06, .05, 14);
-  for (let i = 0; i < 14; i++) {
-    const c = [0x8a8f94, 0xa6abaf, 0x5b6066, 0xc8ccce][i % 4], m = G();
-    m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .075; m.add(st); w.add(m);
-    const pf = { m, ph: i / 14, x0: .55 + (R() - .5) * .2, z0: .2 + (R() - .5) * .2, wob: R() * 6 };
-    const k = pf.ph; m.position.set(pf.x0, .35 + k * 1.6, pf.z0); m.scale.setScalar(.7 + k * 1.1);
-    if (smokes) smokes.push(pf);
+  // drei Rauchsäulen: Rumpf (dick, dunkel), abgerissene Nase, Flügel – zusammen viel mehr Rauch
+  for (const [cx, cz, n, h, s0, dark] of [[.1, 0, 18, 2.6, .9, 1], [1.05, .35, 12, 2.0, .7, 1], [-.3, -.9, 9, 1.6, .6, 0]]) {
+    for (let i = 0; i < n; i++) {
+      const c = dark ? [0x3e4044, 0x5b6066, 0x2a2c2e, 0x8a8f94][i % 4] : [0x8a8f94, 0xa6abaf, 0x5b6066, 0xc8ccce][i % 4], m = G(); m.userData.puff = true;
+      m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .075; m.add(st); w.add(m);
+      const pf = { m, ph: i / n, x0: cx + (R() - .5) * .25, z0: cz + (R() - .5) * .25, wob: R() * 6, h, s0 };
+      const k = pf.ph; m.position.set(pf.x0, .3 + k * h, pf.z0); m.scale.setScalar(s0 + k * 1.4);
+      if (smokes) smokes.push(pf);
+    }
   }
   return w;
 }
@@ -273,7 +276,7 @@ function setup(box) {
   });
   new ResizeObserver(resize).observe(box); resize();
   (function loop() { requestAnimationFrame(loop); if (!S3 || box.offsetParent === null || document.hidden) return; const t = performance.now() / 1000; ctl.update();
-    for (const pf of S3.smokes) { const k = (t * .22 + pf.ph) % 1; pf.m.position.set(pf.x0 + Math.sin(t * .8 + pf.wob) * .12 * k, .35 + k * 1.6, pf.z0 + k * .15); pf.m.scale.setScalar(.7 + k * 1.1); S3.dirty = true; }   // Rauch steigt auf
+    for (const pf of S3.smokes) { const k = (t * .22 + pf.ph) % 1; pf.m.position.set(pf.x0 + Math.sin(t * .8 + pf.wob) * .18 * k, .3 + k * (pf.h || 1.6), pf.z0 + k * .25); pf.m.scale.setScalar((pf.s0 || .7) + k * 1.4); pf.m.visible = !(S3.drops && S3.drops.length); S3.dirty = true; }   // Rauch steigt auf (während des Aufbaus versteckt)
     if (S3.drops && S3.drops.length) stepDrops(t - S3.dropT0);   // Aufbau Stein für Stein
     const L = S3.live; if (L) {
       for (const o of L.sway) { o.rotation.z = Math.sin(t * 1.3 + o.userData.sway) * .04; o.rotation.x = Math.cos(t * 1.1 + o.userData.sway) * .025; }
