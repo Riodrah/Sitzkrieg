@@ -14,7 +14,7 @@ const RULES={
   "farm": {"name": "Farm", "regel": "Das Gebäude gibt Deckung und blockiert die Sichtlinie. Der Acker ist unwegsames Gelände (halbe Bewegung)."},
   "turm": {"name": "Wachturm", "regel": "Gibt Deckung und ist eine erhöhte Position."},
   "bunker": {"name": "Bunker", "regel": "Gibt Deckung und blockiert die Sichtlinie."},
-  "strand": {"name": "Strand", "regel": "Der Sand ist unwegsames Gelände (halbe Bewegung). Wasser ist unpassierbar."},
+  "strand": {"name": "Strand", "regel": "Wasser ist unpassierbar."},
   "wohn": {"name": "Wohnhaus", "regel": "Das Gebäude gibt Deckung und blockiert die Sichtlinie."},
   "graben": {"name": "Graben", "regel": "Unwegsames Gelände (halbe Bewegung). Gibt Deckung."},
   "hafen": {"name": "Hafen", "regel": "Wasser ist unpassierbar. Die Kisten geben Deckung."},
