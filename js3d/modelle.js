@@ -215,8 +215,16 @@ function headwear(h, side, kind) {
   const c = COL[side];
   if (kind === 'medic-only') kind = 'medic';
   else if (kind === 'general') {
-    P(h, CY(.2, .2, .08, 28), c.uni2, 0, .2, 0); P(h, CY(.26, .21, .11, 28), c.uni, 0, .27, -.01);
-    P(h, RB(.3, .025, .13, .01), BLK, 0, .17, .17, -.25); P(h, RB(.08, .05, .02, .008), GOLD, 0, .27, .25);
+    if (h.parent && h.parent.userData.glb) {   // Modell-Figur: große Schirmmütze, deckt den Stahlhelm darunter ganz ab
+      P(h, CY(.3, .3, .24, 32), c.uni2, 0, .105, -.01);                     // Mützenband (reicht tief genug, kein Helmrand sichtbar)
+      P(h, CY(.345, .295, .12, 32), c.uni, 0, .285, -.025);                 // Deckel
+      P(h, CY(.35, .35, .022, 32), c.uni2, 0, .35, -.025);
+      P(h, RB(.4, .03, .19, .012), BLK, 0, .05, .25, -.22);                 // Schirm
+      P(h, RB(.11, .065, .02, .008), GOLD, 0, .22, .295); P(h, RB(.38, .024, .02, .006), GOLD, 0, .1, .3);   // Abzeichen, Kordel
+    } else {
+      P(h, CY(.2, .2, .08, 28), c.uni2, 0, .2, 0); P(h, CY(.26, .21, .11, 28), c.uni, 0, .27, -.01);
+      P(h, RB(.3, .025, .13, .01), BLK, 0, .17, .17, -.25); P(h, RB(.08, .05, .02, .008), GOLD, 0, .27, .25);
+    }
   } else if (h.parent && h.parent.userData.glb) {
   } else if (side === 'de') {
     P(h, SP(.235, 0, Math.PI * 2, 0, HALF), c.helm, 0, .14, -.01);
