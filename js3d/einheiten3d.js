@@ -308,6 +308,12 @@ function attach(play) {
 // Rundenende: Missionsziel-Felder als 3D-Modell, Flakgeschütz in 3D
 // Das Modell des Missionsziels dreht sich langsam (nur bei Missionszielen, nicht beim Bildschirm „Rauch und Feuer“)
 const OBJ_KEY = { Transporter: 'trans', Kampfflieger: 'flieger', 'Artilleriegeschütz': 'art', 'Flakgeschütz': 'flak' };
+const sideOf = k => k === 'flieger' ? 'al' : 'de';   // Kampfflieger wie auf der Karte (Wüstentarnung)
+function battery() {   // drei Artilleriegeschütze versetzt, wie auf der 3D-Karte
+  const b = new THREE.Group();
+  for (const [x, z] of [[.2, -2], [-1.2, 0], [.48, 2]]) { const gun = buildUnit('art', 'de'); gun.position.set(x, 0, z); b.add(gun); }
+  return b;
+}
 // Drehbühne: ein Modell (Kartenfeld 'feld:…' oder Einheit) dreht sich langsam in einem Platz der Seite
 function turnStage(cls) {
   const st = { r: null, cur: null };
@@ -315,7 +321,7 @@ function turnStage(cls) {
     await heavy(); const { fieldModel } = await import('./gelaende.js'); if (!slot.isConnected) return;
     if (!st.r) { st.r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); st.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); st.r.outputColorSpace = THREE.SRGBColorSpace; st.r.toneMapping = THREE.NeutralToneMapping; st.r.toneMappingExposure = .9; st.r.domElement.className = cls; }
     const r = st.r, scene = new THREE.Scene(); lights(scene, r);
-    const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : buildUnit(key, 'de'), piv = new THREE.Group(); scene.add(piv); piv.add(g);
+    const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : key === 'art' ? battery() : buildUnit(key, sideOf(key)), piv = new THREE.Group(); scene.add(piv); piv.add(g);
     const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
     const a = w / h, cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.02, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
     r.setSize(w, h, false); r.domElement.style.width = w + 'px'; r.domElement.style.height = h + 'px';
@@ -333,7 +339,7 @@ async function roundEnd() {
   const name = (ic.parentElement.querySelector('.gc-name')?.textContent || '').replace('⚑', '').trim(), p = pieceOf(name);
   const key = OBJ_KEY[name] || (p ? 'feld:' + p.key : null); if (!key) return;
   // sofort ein Standbild zeigen, dann durch die Drehbühne ersetzen
-  const slot = ic.querySelector('.re-emo, .re-art'); getPhoto(key, 'de', 260).then(u => { if (slot && slot.isConnected && !ic.querySelector('canvas')) slot.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
+  const slot = ic.querySelector('.re-emo, .re-art'); getPhoto(key, sideOf(key), 260).then(u => { if (slot && slot.isConnected && !ic.querySelector('canvas')) slot.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
   if (still || !slot) return;
   const h = Math.max(90, (ic.clientHeight || 230) - 4), w = Math.max(140, Math.min(ic.clientWidth || 420, Math.round(h * 1.8)));   // füllt den Bildbereich der Karte
   reStage.show(slot, key, w, h);

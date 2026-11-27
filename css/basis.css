@@ -156,7 +156,6 @@ html[data-theme="dark"] .vp-lbl{color:#e3dcc0}
 /* Regelbegriffe auf den Spielkarten */
 .rlink{border-bottom:1.5px dotted currentColor;cursor:pointer;text-decoration:none;border-radius:2px}
 .rlink:hover,.rlink:focus-visible{background:rgba(155,45,32,.15);outline:none}
-.rlink::after{content:"ⓘ";font-size:.62em;vertical-align:super;margin-left:1px;opacity:.65}
 th .rlink,.gc-top .rlink{border:0}
 /* Suche im Regelwerk */
 .rw-search{display:flex;align-items:center;gap:8px;margin:0 0 10px}

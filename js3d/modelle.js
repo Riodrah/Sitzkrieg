@@ -322,8 +322,14 @@ function soldier(side, kind = 'rif', opt = {}) {
     }
     case 'medic': {
       u.armR = arm(body, 1, ARM, -1.9); u.armL = arm(body, -1, ARM, -.25);
-      const bag = brick(body, .2, .24, .2, WHT, -.42, .55, .12, { studs: false });
-      const s = G(); P(s, CY(.03, .03, .16, 12), 0xdfe9ee); P(s, CY(.006, .006, .08, 6), DGR, 0, .12, 0); u.armR.userData.hand.add(s); break;
+      const s = G(); P(s, CY(.03, .03, .16, 12), 0xdfe9ee); P(s, CY(.006, .006, .08, 6), DGR, 0, .12, 0); u.armR.userData.hand.add(s);
+      // roter Sanitätskoffer mit weißem Plus, hängt am Griff in der anderen Hand
+      g.updateMatrixWorld(true); const hl = u.armL.userData.hand, hp = hl.localToWorld((hl.userData.clip || new THREE.Vector3(0, -.1, 0)).clone()); body.worldToLocal(hp);
+      const kit = G(); kit.position.set(hp.x, hp.y - .02, hp.z); body.add(kit);
+      P(kit, RB(.1, .19, .27, .02), 0xc0141a, 0, -.12, 0);                                    // Koffer
+      P(kit, RB(.03, .05, .1, .01), 0x1b1b1b, 0, .0, 0);                                      // Griff
+      for (const sx of [-1, 1]) { P(kit, RB(.006, .12, .035, .002), WHT, sx * .052, -.12, 0); P(kit, RB(.006, .035, .12, .002), WHT, sx * .052, -.12, 0); }   // weißes Plus auf beiden Seiten
+      if (body.userData.glb) kit.scale.setScalar(1.2); hl.attach(kit); u.kit = kit; break;
     }
     case 'general': {
       if (opt.veteran) { hold(mgun(), .04, .8, .24, -.05); u.armL = arm(body, -1, ARM, -1.2, .2); u.armR = arm(body, 1, ARM, -.75); break; }
