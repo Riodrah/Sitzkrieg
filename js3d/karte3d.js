@@ -277,6 +277,12 @@ function build() {
       const p = w > d ? g.position.z : g.position.x;
       if (p < -.01) t.rotation.y = Math.PI;                       // in der Mittelspalte gibt es keinen Rand an der langen Seite: bleibt wie gebaut
     }
+    if (x.p.key === 'bunker') {   // zufällige Richtung (fest je Karte), die Schießscharte (+z im Modell) zeigt nie zum Spielfeldrand
+      const ok = [0, HALF, Math.PI, -HALF].filter(a => { const dx = Math.round(Math.sin(a)), dz = Math.round(Math.cos(a));
+        return !(dx > 0 && g.position.x + CELL / 2 > W / 2 - .05) && !(dx < 0 && g.position.x - CELL / 2 < -W / 2 + .05) && !(dz > 0 && g.position.z + CELL / 2 > D / 2 - .05) && !(dz < 0 && g.position.z - CELL / 2 < -D / 2 + .05); });
+      const h = (((current.seed | 0) ^ Math.imul(pi + 1, 2654435761)) >>> 0) % 1000;
+      if (ok.length) t.rotation.y = ok[h % ok.length];
+    }
     if (x.p.key === 'kirche') { const p = w > d ? g.position.z : g.position.x; if (p > .01) t.rotation.y = Math.PI; }   // Kirchenportal zur Kartenmitte drehen
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
