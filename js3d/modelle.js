@@ -315,8 +315,10 @@ function soldier(side, kind = 'rif', opt = {}) {
     }
     case 'mech': {
       u.armR = arm(body, 1, ARM, -2.4); u.armL = arm(body, -1, ARM, -.3);
-      const w = G(); P(w, RB(.04, .34, .03, .01), LGR, 0, .15, 0); P(w, TO(.06, .02, Math.PI * 1.5), LGR, 0, .34, 0, 0, 0, .8); u.armR.userData.hand.add(w); u.tool = w;
-      brick(body, .4, .24, .2, RED, -.5, .12, .3); break;
+      // großer Schraubenschlüssel: langer Griff, offenes Maul oben, Ringende unten
+      const w = G(); P(w, RB(.075, .62, .04, .015), LGR, 0, .26, 0);
+      P(w, TO(.11, .04, Math.PI * 1.45), LGR, 0, .64, 0, 0, 0, .85); P(w, TO(.065, .03), LGR, 0, -.07, 0);
+      if (body.userData.glb) w.scale.setScalar(1.3); w.rotation.x = 1.0; u.armR.userData.hand.add(w); u.tool = w; break;   // nach oben gehalten, gut sichtbar
     }
     case 'medic': {
       u.armR = arm(body, 1, ARM, -1.9); u.armL = arm(body, -1, ARM, -.25);
@@ -598,7 +600,7 @@ function brickTire(parent, r, w, x, y, z) {   // Reifen mit rundem Profil + Rill
 }
 function krad(side) {
   const g = G(), u = g.userData, b = G(); g.add(b); u.body = b;
-  const OL = side === 'de' ? 0x77741f : 0x5c6436, DG = 0x4a4e52;
+  const OL = side === 'de' ? 0x6e7175 : 0x5c6436, DG = 0x4a4e52;   // deutsches Kraftrad grau
   // Motorrad
   brickTire(b, .27, .16, .72, .27, 0); brickTire(b, .27, .16, -.6, .27, 0);
   fender(b, .29, .2, .72, .27, 0, OL, 1.05); fender(b, .29, .2, -.6, .27, 0, OL, 1.15).rotation.z = .25;

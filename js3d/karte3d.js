@@ -8,10 +8,10 @@ import { lights, envFor } from './foto.js';
 import { TERRAIN, terrain, G, HALF, sandbag, R } from './gelaende.js';
 
 const CELL = 1.6, GAP = .06;
-function flag(g, y = 0) {
+function flag(g, y = 0, col = 0xc91a1a) {
   const f = G(); f.position.set(.55, y, -.55); g.add(f);
   brick(f, .05, 1.4, .05, 0xd8d0bc, 0, .7, 0, { studs: false });
-  const cloth = new THREE.Mesh(new THREE.PlaneGeometry(.5, .32, 8, 1), new THREE.MeshStandardMaterial({ color: 0xc91a1a, side: THREE.DoubleSide, roughness: .5 })); cloth.position.set(.26, 1.24, 0); f.add(cloth);
+  const cloth = new THREE.Mesh(new THREE.PlaneGeometry(.5, .32, 8, 1), new THREE.MeshStandardMaterial({ color: col, side: THREE.DoubleSide, roughness: .5 })); cloth.position.set(.26, 1.24, 0); f.add(cloth);
   f.userData.cloth = cloth; return f;
 }
 // Stacheldraht-Rolle wie im echten Aufbau: graue Drahtspirale zwischen zwei Kreuzen aus dunkelorangen 1x4-Platten (Noppen nach außen)
@@ -276,8 +276,9 @@ function build() {
     if (x.p.key === 'kirche') { const p = w > d ? g.position.z : g.position.x; if (p > .01) t.rotation.y = Math.PI; }   // Kirchenportal zur Kartenmitte drehen
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
-    if (oi >= 0) { const f = flag(g, .02); f.scale.setScalar(1.35); S3.flags.push(f); const o = ms.objInfo[oi];
-      const tg = tag('⚑ ' + (o.flex ? o.name : (x.p.name || 'Ziel')), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
+    if (oi >= 0) { const oc = typeof OBJ_COL !== 'undefined' ? OBJ_COL[oi % OBJ_COL.length] : '#b3261a', ot = typeof OBJ_TXT !== 'undefined' ? OBJ_TXT[oi % OBJ_TXT.length] : '#fff';   // Blau, Grün, Rot (+ Gelb, Pink)
+      const f = flag(g, .02, new THREE.Color(oc).getHex()); f.scale.setScalar(1.35); S3.flags.push(f); const o = ms.objInfo[oi];
+      const tg = tag('⚑ ' + (o.flex ? o.name : (x.p.name || 'Ziel')), oc, ot); tg.position.set(0, 2.3, 0); g.add(tg);
       if (o.flex && o.name === 'Artilleriegeschütz') {   // Batterie: drei Geschütze versetzt wie im echten Aufbau, zielen zur Kartenmitte
         const bat = G(); bat.position.set(-.15, .02, .1); bat.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(bat);
         for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } }

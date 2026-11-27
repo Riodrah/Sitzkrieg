@@ -607,11 +607,11 @@
   .edge-corner.left{left:4px} .edge-corner.right{right:4px} .edge-corner.top{top:4px} .edge-corner.bottom{bottom:4px}
   @media (max-width:640px){ #map.has-edges{padding:20px} .edge.left,.edge.right{width:13px} .edge.top,.edge.bottom{height:13px}
     .edge.left,.edge.right{top:20px;bottom:20px} .edge.top,.edge.bottom{left:20px;right:20px} .edge b{font-size:8px} }
-  .cell .obj{position:absolute;top:4px;left:4px;z-index:3;padding:1px 6px;font-family:var(--head);font-size:.75rem;color:#fff3e0;
-             background:var(--stamp);border:1px solid #3a1008;box-shadow:0 2px 3px rgba(0,0,0,.4);transform:rotate(-4deg)}
+  .cell .obj{position:absolute;top:4px;left:4px;z-index:3;padding:1px 6px;font-family:var(--head);font-size:.75rem;color:var(--oct,#fff3e0);
+             background:var(--oc,var(--stamp));border:1px solid rgba(0,0,0,.55);box-shadow:0 2px 3px rgba(0,0,0,.4);transform:rotate(-4deg)}
   .cell .ext{position:absolute;left:50%;top:5px;z-index:3;width:max-content;max-width:94%;padding:1px 5px;font-family:var(--head);text-transform:uppercase;letter-spacing:.03em;font-size:clamp(.48rem,calc(var(--side,90px)*.1),.72rem);line-height:1.1;text-align:center;color:#2a2414;background:#e8d9a8;border:1px dashed #6b5a2e;box-shadow:0 2px 3px rgba(0,0,0,.35);transform:translateX(-50%) rotate(2deg);white-space:normal;hyphens:manual}
   .cell.is-ext{box-shadow:inset 0 0 0 2px #6b5a2e}
-  .cell.is-obj{box-shadow:inset 0 0 0 3px var(--stamp),inset 0 0 18px rgba(20,22,0,.45)}
+  .cell.is-obj{box-shadow:inset 0 0 0 3px var(--oc,var(--stamp)),inset 0 0 18px rgba(20,22,0,.45)}
   .cell .obj-flex{position:absolute;left:50%;bottom:22%;transform:translateX(-50%) rotate(-3deg);z-index:3;width:max-content;max-width:94%;padding:2px 5px;white-space:normal;hyphens:manual;text-align:center;line-height:1.1;
              font-family:var(--head);text-transform:uppercase;letter-spacing:.04em;font-size:clamp(.5rem,calc(var(--side,90px)*.11),.78rem);color:#fff3e0;background:#3c4322;border:1px solid #a89a63;box-shadow:0 2px 3px rgba(0,0,0,.4)}
   html[data-theme="dark"] .mapmission{background:rgba(18,21,13,.62);border-color:#4a4a32}

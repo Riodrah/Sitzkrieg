@@ -78,6 +78,8 @@ function missionSetup(){
   return current._ms={key,edges,objectives,objInfo:info.map(o=>({name:o.name,flex:o.flex,ort:o.p.p.name,cells:o.p.cells})),
     exts:exts.map(e=>({p:e.p,name:e.t.name,icon:e.t.icon,ort:e.p.p.name}))};
 }
+// Farben der Zielflaggen in Reihenfolge: normal Blau, Grün, Rot – episch zusätzlich Gelb und Pink (Text dazu: hell oder dunkel)
+const OBJ_COL=['#1f5fbf','#2f8a3a','#c91a1a','#e8c21a','#e0559f'], OBJ_TXT=['#fff','#fff','#fff','#1b1b14','#fff'];
 function renderMapMission(ms,port){
   const box=$('mapmission'), m=window.CUR_MISSION;
   if(!m||!current||current.error){ box.hidden=true; return; }

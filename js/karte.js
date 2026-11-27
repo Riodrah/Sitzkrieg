@@ -197,6 +197,7 @@ function render(){
     el.title=x.p.name;
     const oi=mset?mset.objectives.indexOf(x):-1;
     if(oi>=0){ const o=mset.objInfo[oi]; el.classList.add('is-obj'); if(o.flex) el.classList.add('is-flex');
+      if(typeof OBJ_COL!=='undefined'){ el.style.setProperty('--oc',OBJ_COL[oi%OBJ_COL.length]); el.style.setProperty('--oct',OBJ_TXT[oi%OBJ_TXT.length]); }
       el.insertAdjacentHTML('beforeend',`<span class="obj" title="Missionsziel: ${o.name}">⚑</span>${o.flex?`<span class="obj-flex">${OBJ_SHY[o.name]||o.name}</span>`:''}`);
       el.title+=` · Missionsziel${o.flex?': '+o.name:''}`; }
     const ex=mset&&mset.exts?mset.exts.find(e=>e.p===x):null;
