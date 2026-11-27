@@ -285,7 +285,7 @@ function build() {
       if (o.flex && o.name === 'Flakgeschütz') { const fl = buildUnit('flak', 'de'); fl.scale.setScalar(.3); fl.position.set(-.2, .02, .2); fl.rotation.y = .6; g.add(fl); }
       if (o.flex && o.name === 'Transporter') { const tr = buildUnit('trans', 'de'); tr.scale.setScalar(.27); tr.position.set(-.15, .02, .2); tr.rotation.y = .5; g.add(tr); }
       if (o.flex && o.name === 'Kampfflieger') { const pl = buildUnit('flieger', 'al'); pl.userData.body.position.y = .74; pl.scale.setScalar(.27); pl.position.set(-.15, .02, .15); pl.rotation.y = .5; g.add(pl); } }
-    if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#e2b33a', '#1b1b14'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
+    if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#ffffff', '#111111'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;
     g.userData.pi = pi; g.userData.tap = true;
   });
