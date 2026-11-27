@@ -87,6 +87,7 @@ const AT = new Set(['schwer', 'leicht', 'pzf', 'art']);
 function targetKind(kind) { if (NO_TARGET.has(kind)) return null; return AT.has(kind) ? 'tank' : 'inf'; }
 function spawnTargets(v) {
   if (v.wreck) { v.scene.remove(v.wreck.g); v.wreck = null; }
+  v.burning = null;
   for (const t of v.targets) v.stage.remove(t); for (const d of v.debris) v.scene.remove(d.m); for (const m of v.mineMeshes || []) v.stage.remove(m); v.targets = []; v.debris = []; v.mineMeshes = [];
   if (!v.tKind) return;
   const foe = v.side === 'de' ? 'al' : 'de';
@@ -132,6 +133,30 @@ function stepWreck(v, dt) {
   const w = v.wreck; w.t += dt;
   for (const p of w.puffs) { p.t += dt; const k = (p.t % 2.8) / 2.8; p.m.position.set(p.x + Math.sin(w.t * 1.2 + p.w) * .1 * k - k * .3, .25 + k * 1.8, p.z - k * .2); p.m.scale.setScalar(.5 + k * 1.1); p.m.visible = k > .03 && k < .96; }
   const s = 1 + Math.sin(w.t * 14) * .14 + Math.sin(w.t * 8.3) * .08; w.fl.scale.set(1, s, 1);
+}
+// Flammenwerfer: Gegner fangen Feuer, verkohlen und brennen als Bruchstücke am Boden weiter
+function ignite(v) {
+  const uChar = { value: 0 };                                                       // 0 = normal, 1 = verkohlt (wirkt auch bei den umgefärbten Soldatenfiguren)
+  for (const t of v.targets) t.traverse(o => {
+    if (!o.isMesh || !o.material || o.userData.charred || Array.isArray(o.material)) return;
+    const om = o.material, m = om.clone(), ob = om.onBeforeCompile, key = om.customProgramCacheKey ? om.customProgramCacheKey() : '';   // eigene Kopie: andere Figuren bleiben unverändert
+    m.onBeforeCompile = (sh, r) => { if (ob) ob.call(om, sh, r); sh.uniforms.uChar = uChar;
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uChar;').replace('#include <alphamap_fragment>', '#include <alphamap_fragment>\n diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.09,.075,.065), uChar);'); };
+    m.customProgramCacheKey = () => 'char-' + key; o.material = m; o.userData.charred = true;
+  });
+  v.burning = { t: 0, dur: 3.4, uChar };
+}
+function stepBurn(v, dt) {
+  const b = v.burning; b.t += dt; if (b.t > b.dur) { v.burning = null; return; }
+  b.uChar.value = Math.min(1, b.t / .8) * .9;                                        // verkohlen
+  const fade = b.t < 2.2 ? 1 : 1 - (b.t - 2.2) / (b.dur - 2.2);                      // Flammen werden zum Schluss kleiner
+  const flame = (p, s) => v.fx.spawn({ p: p.clone().add(V((Math.random() - .5) * .12, 0, (Math.random() - .5) * .12)), v: V((Math.random() - .5) * .2, .7 + Math.random() * .6, (Math.random() - .5) * .2), life: .45 + Math.random() * .25, s0: .16 * s * fade, s1: .04, c0: 0xffe070, c1: 0xe0300a, g: .8 });
+  const box = new THREE.Box3(), c = new THREE.Vector3();
+  for (const t of v.targets) if (!t.userData.broken && Math.random() < .9) { box.setFromObject(t); box.getCenter(c); c.y = box.min.y + Math.random() * (box.max.y - box.min.y); flame(c, 1.6); }
+  const wp = new THREE.Vector3();
+  for (const d of v.debris) if (Math.random() < .7) { d.m.getWorldPosition(wp); flame(wp.setY(Math.max(wp.y, .06)), 1.5); }   // brennende Bruchstücke
+  if (Math.random() < .25 && v.targets[0]) { box.setFromObject(v.targets[0]); box.getCenter(c); v.fx.flash(c, 1.8 * fade); }
+  if (Math.random() < .06) { const d = v.debris[Math.floor(Math.random() * v.debris.length)]; if (d) v.fx.smoke(d.m.position.clone().setY(.3), .6, 1, 0x2a2826); }
 }
 function stepDebris(v, dt) {
   for (const d of v.debris) {
@@ -191,7 +216,7 @@ function act(v) {
     case 'mg': shots(d.weapon, 9, .09, { cas: true, rec: .03, burst: true }); break;
     case 'general-veteran': shots(d.weapon, 9, .09, { cas: true, rec: .03 }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
     case 'general': shots(d.weapon, 2, .35, { d: .3, snd: 'pistole' }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
-    case 'flame': fx.at(.25, () => flameSound(1.1)); for (let i = 0; i < 26; i++) fx.at(.25 + i * .035, () => { const { p, dir } = muzzleOf(d.weapon); fx.fire(p, dir, 1); if (i % 5 === 0) fx.flash(p, 3); }); fx.at(1.2, () => fx.smoke(ground(d.weapon, 1.6).setY(.4), 1, 4, 0x3a3630)); break;
+    case 'flame': if (v.tKind) fx.at(.45, () => ignite(v)); fx.at(.25, () => flameSound(1.1)); for (let i = 0; i < 26; i++) fx.at(.25 + i * .035, () => { const { p, dir } = muzzleOf(d.weapon); fx.fire(p, dir, 1); if (i % 5 === 0) fx.flash(p, 3); }); fx.at(1.2, () => fx.smoke(ground(d.weapon, 1.6).setY(.4), 1, 4, 0x3a3630)); break;
     case 'pzf': fx.at(.35, () => { snd('abschuss', .8); const { p, dir } = muzzleOf(d.weapon); fx.muzzle(p, dir, 1.4); const back = d.weapon.localToWorld(d.weapon.userData.back.clone()); fx.smoke(back, 1.2, 6, 0xb0aaa0); fx.tracer(p, dir, 3.5, 12); fx.at(.3, () => { fx.explosion(hit.clone(), .8); snd('explosion'); }); }); break;
     case 'grenade': if (gs) { gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x - .4 }, { x: d.armR.rotation.x + 1.6, duration: .25, delay: .2, ease: 'power3.in', yoyo: true, repeat: 1 }); }
       fx.at(.45, () => { const g = d.grenade; const p0 = g.getWorldPosition(new THREE.Vector3()); g.visible = false; const t = { k: 0 }; const end = hit.clone(); const ghost = g.clone(); ghost.visible = true; v.scene.add(ghost);
@@ -264,6 +289,7 @@ function loop() {
   for (const u of v.units) { const d = u.userData; if (d.prop) d.prop.rotation.x += dt * 40; if (d.type === 'inf' && d.body) d.body.position.y = Math.abs(Math.sin(t * 2.2 + u.position.x)) * .012; if (d.type === 'air') d.body.position.y = 1.25 + Math.sin(t * 1.6) * .06; }
   if (v.debris.length) stepDebris(v, dt);
   if (v.wreck) stepWreck(v, dt);
+  if (v.burning) stepBurn(v, dt);
   const sh = v.fx.update(dt);
   v.cam.position.copy(v.base).add(V((Math.random() - .5) * sh, (Math.random() - .5) * sh, 0));
   R.render(v.scene, v.cam);
