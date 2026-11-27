@@ -295,9 +295,9 @@ function soldier(side, kind = 'rif', opt = {}) {
     case 'mortar': {
       const m = G(); m.position.set(.6, 0, .4); body.add(m);
       P(m, RB(.42, .04, .42, .01), DGR, 0, .035, 0);   // leicht über der Bauplatte (kein Flackern)
-      P(m, CY(.075, .075, .74, 18), 0x4d5240, 0, .4, .06, -.55); P(m, CY(.015, .015, .5, 8), DGR, 0, .22, .3, .5);
+      P(m, CY(.075, .075, .74, 18), 0x4d5240, 0, .4, .06, .55); P(m, CY(.015, .015, .5, 8), DGR, 0, .22, .3, -.5);   // Rohr zeigt nach vorn (zum Gegner), Zweibein stützt es von vorn
       if (body.userData.glb) m.scale.setScalar(1.3);
-      u.mortar = m; m.userData.muzzle = new THREE.Vector3(0, .74, .38);
+      u.mortar = m; m.userData.muzzle = new THREE.Vector3(0, .72, .27);
       u.armR = arm(body, 1, ARM, -1.8); u.armL = arm(body, -1, ARM, -.4);
       const sh = G(); P(sh, CY(.055, .055, .2, 14), 0x5b5b3e); P(sh, cached('shc', () => new THREE.ConeGeometry(.055, .1, 14)), 0x5b5b3e, 0, .15, 0); u.armR.userData.hand.add(sh); u.shell = sh; break;
     }
