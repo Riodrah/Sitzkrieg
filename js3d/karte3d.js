@@ -1,7 +1,7 @@
 // 3D-Spieltisch: die generierte Karte als Klemmbaustein-Diorama
 // Jedes Feld = Bauplatte mit Gelände-Modell; Missionsziele als Fahnen, Startkanten als farbige Streifen.
 // Antippen eines Feldes öffnet dieselbe Info wie in der 2D-Karte. Gerendert wird nur bei Bewegung (spart Akku).
-import { THREE, brick, slope, plastic, insignia } from './modelle.js';
+import { THREE, brick, slope, plastic, insignia, buildUnit } from './modelle.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
 import { lights, envFor } from './foto.js';
 import { TERRAIN, terrain, G, HALF, sandbag, R } from './gelaende.js';
@@ -117,7 +117,8 @@ function build() {
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
     if (oi >= 0) { const f = flag(g, .02); f.scale.setScalar(1.35); S3.flags.push(f); const o = ms.objInfo[oi];
-      const tg = tag('⚑ ' + (o.flex ? o.name : 'Ziel'), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg); }
+      const tg = tag('⚑ ' + (o.flex ? o.name : 'Ziel'), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
+      if (o.flex && o.name === 'Artilleriegeschütz') { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.3); gun.position.set(-.15, .02, .35); gun.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(gun); } }   // Geschütz zielt zur Kartenmitte
     if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#e2b33a', '#1b1b14'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;
     g.userData.pi = pi; g.userData.tap = true;

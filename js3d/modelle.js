@@ -628,6 +628,48 @@ function fieldGun(side, flak) {
   shadow(g, 1.4); u.type = 'veh';
   return g;
 }
+// Artilleriegeschütz nach Foto der echten Klemmbaustein-Version: olivgrün, genieteter Schild aus zwei Hälften mit Scharnieren,
+// geripptes Rohr mit Mündungsbremse, Rohrrücklauf darunter, Gummireifen mit Silberfelge, gespreizte Lafette mit Spaten
+function howitzer(side) {
+  const g = G(), u = g.userData, b = G(); g.add(b); u.body = b;
+  const OL = side === 'de' ? 0x77741f : 0x5c6436;
+  for (const s of [-1, 1]) brickTire(b, .34, .2, -.05, .34, s * .66);
+  P(b, CY(.06, .06, 1.34, 14), DGR, -.05, .34, 0, HALF, 0, 0);                          // Achse
+  brick(b, .5, .2, .9, OL, -.05, .5, 0, { studs: false });                              // Achsträger
+  for (const s of [-1, 1]) {                                                             // Holme mit Spaten
+    const leg = G(); leg.position.set(-.2, .46, s * .16); leg.rotation.set(0, s * .2, .2); b.add(leg);
+    brick(leg, 1.9, .1, .12, OL, -.95, 0, 0, { studs: false, r: .02 });
+    for (let i = 0; i < 4; i++) P(leg, CY(.025, .025, .03, 10), OL, -.4 - i * .38, .06, 0);
+    brick(leg, .1, .28, .26, OL, -1.86, -.12, 0, { studs: false, r: .02, rot: [0, 0, -.25] });
+  }
+  const cr = G(); cr.position.set(-.05, .72, 0); b.add(cr); u.turret = cr;
+  brick(cr, .7, .26, .5, OL, -.1, 0, 0, { studs: false });                               // Wiege
+  brick(cr, .3, .2, .3, OL, -.25, .23, .02);                                            // Richtaufsatz
+  for (const s of [-1, 1]) {                                                             // Schild: zwei Hälften, nach außen abgewinkelt
+    const hg = G(); hg.position.set(.32, .3, s * .3); hg.rotation.y = s * -.32; cr.add(hg);
+    P(hg, RB(.05, 1.0, .52, .015), OL, 0, 0, s * .06);
+    P(hg, RB(.05, .2, .2, .015), OL, 0, .58, s * .2);                                    // Stufe oben außen
+    for (let i = 0; i < 5; i++) P(hg, CY(.025, .025, .14, 10), OL, .03, -.36 + i * .18, -s * .2);   // Scharnier innen
+    for (let i = 0; i < 6; i++) for (const zz of [-.18, .3]) P(hg, SP(.022), OL, .03, -.44 + i * .17, s * zz);   // Nieten
+    for (const yy of [-.46, .46]) for (let i = 0; i < 3; i++) P(hg, SP(.022), OL, .03, yy, s * (-.06 + i * .12));
+    if (s > 0) insignia(hg, side, .22, .03, .1, .08, HALF);
+  }
+  const el = G(); el.position.set(.15, .1, 0); el.rotation.z = .2; cr.add(el); u.barrel = el; u.muzzles = [];
+  const br = G(); el.add(br);
+  P(br, CY(.14, .14, .5, 18), OL, -.2, 0, 0, 0, 0, HALF);                               // Verschluss
+  for (let i = 0; i < 6; i++) { P(br, CY(.095, .095, .26, 18), OL, .2 + i * .28, 0, 0, 0, 0, HALF); P(br, CY(.108, .108, .035, 18), OL, .33 + i * .28, 0, 0, 0, 0, HALF); }   // geripptes Rohr
+  P(br, CY(.075, .075, .18, 18), OL, 1.85, 0, 0, 0, 0, HALF);
+  P(br, CY(.15, .13, .34, 20), OL, 2.08, 0, 0, 0, 0, HALF);                              // Mündungsbremse
+  P(br, CY(.16, .16, .04, 20), OL, 2.24, 0, 0, 0, 0, HALF);
+  for (const sz of [-1, 1]) P(br, RB(.14, .08, .02, .005), 0x1e1e12, 2.07, 0, sz * .145);   // Schlitze
+  P(br, CY(.09, .09, .02, 18), 0x1e1e12, 2.265, 0, 0, 0, 0, HALF);                       // Mündung
+  for (let i = 0; i < 3; i++) P(br, CY(.08, .08, .3, 16), OL, .25 + i * .32, -.2, 0, 0, 0, HALF);   // Rohrrücklauf darunter
+  P(br, CY(.065, .065, .06, 16), OL, 1.2, -.2, 0, 0, 0, HALF);
+  br.userData.muzzle = new THREE.Vector3(2.3, 0, 0); u.muzzles.push(br);
+  const f = soldier(side, 'rif'); f.remove(f.userData.shadow); f.scale.setScalar(.7); f.position.set(-.85, 0, -.75); f.rotation.y = HALF * .6; f.userData.weapon.visible = false; f.userData.armR.rotation.x = -1.7; b.add(f);
+  shadow(g, 1.4); u.type = 'veh';
+  return g;
+}
 function plane(side) {
   const g = G(), c = COL[side], u = g.userData, b = G(); b.position.y = 1.25; g.add(b); u.body = b;
   const col = side === 'de' ? 0x8b98a3 : c.veh, under = side === 'de' ? 0xb9cad6 : 0xa3a77d;
@@ -658,7 +700,7 @@ export function buildUnit(key, side) {
     case 'leicht': g = tank(side, false); break;
     case 'trans': g = halftrack(side); break;
     case 'krad': g = krad(side); break;
-    case 'art': g = fieldGun(side, false); break;
+    case 'art': g = howitzer(side); break;
     case 'flak': g = fieldGun(side, true); break;
     case 'flieger': g = plane(side); break;
     case 'modern': g = modern(); break;
