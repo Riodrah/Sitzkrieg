@@ -1,0 +1,90 @@
+/* 3D-Klemmbaustein-Modelle: Standbilder statt SVG + lebende Szene auf der Spielkarte */
+img.fig.f3d{display:block;height:100%;width:auto;max-width:100%;object-fit:contain;-webkit-user-drag:none;user-select:none}
+.slot-art img.fig{max-height:100%}
+.slot-art.duo img.fig:only-of-type{width:auto}
+.slot-art.duo img.fig{width:auto;max-width:50%;height:100%}
+.slot-art.duo.five img.fig{width:28%;max-width:none;height:auto;flex:none;margin-left:-9%} .slot-art.duo.five img.fig:first-child{margin-left:0}
+.slot.veh .slot-art img.fig{width:100%;height:auto;max-height:100%}
+.mini img.fig{height:28px;width:auto;display:inline-block}
+.pu-fig img.fig{height:100%;width:auto}
+.gc-art img.fig{height:100%;width:auto}
+.gc-art.veh img.fig{width:min(320px,90%);height:auto}
+.gc-art.five img.fig{height:82%;margin-left:-14px} .gc-art.five img.fig:first-child{margin-left:0}
+/* Spielkarte: lebende 3D-Szene */
+.gc-art.has3d{height:190px!important;padding:0!important;position:relative;overflow:hidden!important;
+  background:radial-gradient(ellipse at 50% 85%,rgba(255,240,200,.18),transparent 70%)!important}
+.gc-art.has3d>img.fig,.gc-art.has3d>.fxl{display:none!important}
+.gc-art .live3d{position:absolute;inset:0;width:100%!important;height:100%!important;display:block;cursor:pointer}
+.gc-art .gc-crest{z-index:2}
+.gcard.flip-in .gc-art.has3d .live3d{animation:none}
+@media (max-width:640px){ .gc-art.has3d{height:170px!important} }
+@media (orientation:landscape) and (max-height:560px){ .gc-art.has3d{height:auto!important;min-height:110px;max-height:none!important} }
+/* 3D-Spieltisch im Karte-Tab */
+#map3d{display:none;position:relative;width:100%;height:min(62vh,560px);margin:0 auto;border-radius:6px;overflow:hidden;touch-action:none;
+  background:radial-gradient(ellipse at 50% 40%,rgba(255,240,200,.14),transparent 70%),linear-gradient(#2a2e20,#15170f);box-shadow:inset 0 0 40px rgba(0,0,0,.6)}
+#map3d canvas{position:absolute;inset:0;display:block;width:100%!important;height:100%!important}
+body.map3d-on #map3d{display:block}
+body.map3d-on #map{position:absolute!important;left:-9999px;visibility:hidden}
+@media (max-width:640px){ #map3d{height:72vh} #map3d.quer{height:38vh} }
+#map-wrap{position:relative}
+#map-tools{display:flex;gap:8px}
+@media (max-width:640px){ #tab-gen .bar{grid-template-columns:1fr auto} #tab-gen .bar #gen{grid-column:1 / -1} #tab-gen .bar .seg{grid-column:1;grid-template-columns:1fr 1fr} #map-tools{grid-column:2} }
+#map-tools button{grid-column:auto;min-width:50px;height:100%;min-height:42px;padding:0 12px!important;font-size:1rem!important;line-height:1;border-radius:10px!important;letter-spacing:.06em;
+  background:linear-gradient(#6b7540,#454d27)!important;color:#f3ecd2!important;border:2px solid #c9bf8e!important;box-shadow:0 2px 6px rgba(0,0,0,.5)!important;text-transform:none;margin:0}
+#map-tools #rot{font-size:1.3rem!important}
+
+/* Solange die 3D-Bilder laden: keine alten Zeichnungen, nur ein sanfter Platzhalter */
+html.lego3d-wait :is(.slot-art,.gc-art,.mini,.pu-fig) svg.fig{visibility:hidden}
+html.lego3d-wait .slot-art,html.lego3d-wait .gc-art{background:radial-gradient(ellipse at 50% 60%,rgba(200,190,140,.14),transparent 65%)!important;animation:figWait 1.1s ease-in-out infinite alternate}
+@keyframes figWait{from{opacity:.55}to{opacity:1}}
+/* Alte 2D-Effekte (Pseudo-Elemente: Mündungsblitz, Staub, Rauch …) bei der 3D-Szene abschalten */
+.gc-art.has3d::after{display:none!important;animation:none!important}
+/* Altes 2D-Wackeln der ganzen Karte aus – die 3D-Szene wackelt selbst (nur noch kurz umdrehen beim Aufdecken) */
+.gcard.fx-shake:has(.gc-art.has3d){animation:flipIn .28s cubic-bezier(.2,.7,.3,1) both}
+.gcard.fx-shake.no-flip:has(.gc-art.has3d){animation:none}
+@media (prefers-reduced-motion:reduce){ .gcard.fx-shake{display:block!important} }
+
+/* Rundenende: 3D-Bilder (Feld-Modelle, Fahrzeuge) in fester Höhe */
+.re-ic{height:150px!important;align-items:center!important}
+.re-ic :is(.re-emo,.re-art){display:flex;height:100%;align-items:center;justify-content:center}
+.re-ic img.fig{height:100%!important;width:auto!important;max-width:min(300px,100%)!important;object-fit:contain}
+@media (orientation:landscape) and (max-height:560px){ .re-ic{height:70px!important} }
+/* Rundenende: alte 2D-Symbole nicht aufblitzen lassen, bis das 3D-Bild da ist (ohne 3D bleiben sie sichtbar) */
+html:is(.lego3d,.lego3d-wait) .re-ic :is(img.emj,svg){visibility:hidden}
+/* Kein Strahlenkranz hinter den Einheiten auf der Spielkarte */
+.gc-art::before{display:none!important;animation:none!important}
+/* Regelwerk: 3D-Bilder der Einheiten, Fahrzeuge und Felder */
+.rw3d{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:10px;margin:6px 0 12px}
+.rw3d img.fig{height:120px;width:auto}
+.rw3d img.fig.veh{height:96px}
+.rw3d.many img.fig{height:96px}
+.rw3d.felder{display:block;margin-top:14px}
+.rw3d.felder h3{font-family:var(--head);text-transform:uppercase;letter-spacing:.06em;font-size:1rem;margin:0 0 8px}
+.rw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:8px}
+.rw-grid figure{margin:0;text-align:center}
+.rw-grid img.fig{width:100%;height:auto}
+.rw-grid figcaption{font-family:var(--head);text-transform:uppercase;font-size:.72rem;letter-spacing:.04em}
+.pop-card .rw3d img.fig{height:110px}
+canvas.turn3d{display:block;margin:0 auto}
+.turn-host{display:flex;justify-content:center;margin:0 0 8px}
+/* Armee-Tab: Figur reagiert beim Antippen */
+.slot:active .slot-art img.fig{transform:scale(1.07) rotate(-3deg);transition:transform .08s}
+.slot .slot-art img.fig{transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+.rw3d:not(.felder) img.fig{max-width:calc(50% - 6px);height:auto!important;max-height:120px;object-fit:contain}
+.rw3d.many img.fig{max-width:calc(33% - 8px)}
+/* Rundenende Rauch und Feuer: 3D-Szene statt Zeichnung */
+.fire-wrap.has3d{position:relative;height:200px}
+.fire-wrap.has3d svg{display:none}
+.fire-wrap canvas.fire3d{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
+@media (orientation:landscape) and (max-height:560px){ .fire-wrap.has3d{height:120px} }
+html:is(.lego3d,.lego3d-wait) .fire-wrap svg{visibility:hidden}
+/* Regelwerk-Bilder nur im Regelwerk – nicht in der Spielkarte oder im Popup (dort nur die wichtigen Infos) */
+.gcard .rw3d,.pop-card .rw3d{display:none!important}
+/* Noch nicht berechnete 3D-Bilder: keine alten Zeichnungen zeigen, nur Platzhalter */
+html.lego3d :is(.slot-art,.mini,.pu-fig) svg.fig{visibility:hidden}
+/* Bildfeld der Spielkarte ist kein Armee-Kasten: kein Rahmen, kein harter Schatten (schwarzer Balken unter dem Modell) */
+.gc-art.army{border:0!important;box-shadow:none!important;border-radius:0!important}
+.re-art.army,.pu-fig.army{border:0!important;box-shadow:none!important}
+/* „Im Regelwerk öffnen“ wird nicht mehr gebraucht */
+#pen-rules{display:none!important}
+.pen-nav:not(:has(#pen-back)){display:none!important}
