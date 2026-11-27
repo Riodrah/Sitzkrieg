@@ -558,6 +558,76 @@ function tankDetails(hull, tur, br, side, heavy, L, Wd, r, hy, c, u) {
     if (heavy) for (const sz of [-1, 1]) for (let i = 0; i < 3; i++) P(hull, RB(.32, .14, .06, .02), MT, -L * .33 + i * L * .33, r * 1.55, sz * (Wd + .22));   // Laufwerksträger (VVSS)
   }
 }
+// Leichter Panzer der Deutschen nach Foto (Panzer II im Klemmbaustein-Stil): grau, fünf große Laufrollen, gezahntes Antriebsrad vorn,
+// Speichen-Leitrad hinten, Stützrollen, flacher Rumpf mit Kettenblechen, kantiger Turm mit „61“, runde Kuppel, dünnes schwarzes Rohr
+function panzer2(side) {
+  const g = G(), u = g.userData, hull = G(); g.add(hull); u.body = hull;
+  const GR = 0x63686d, GR2 = 0x50555a, LG2 = 0xb4b8bb, K = 0x161616, OR = 0xa8501c, L = 2.5, TZ = .66, TW = .26;
+  const decal = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: .5, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  const num = decal(128, 128, (x, w, h) => { x.font = '700 90px Arial,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.lineJoin = 'round';
+    x.lineWidth = 16; x.strokeStyle = '#fff'; x.strokeText('61', w / 2, h / 2 + 4); x.lineWidth = 8; x.strokeStyle = '#111'; x.strokeText('61', w / 2, h / 2 + 4); x.fillStyle = '#fff'; x.fillText('61', w / 2, h / 2 + 4); });   // weiße Zahl mit schwarzem Rand
+  const quad = (mat, sx, sy, x, y, z, ry, par) => { const m = new THREE.Mesh(cached('pl', () => new THREE.PlaneGeometry(1, 1)), mat); m.scale.set(sx, sy, 1); m.position.set(x, y, z); m.rotation.y = ry; par.add(m); return m; };
+  for (const s of [-1, 1]) {
+    const t = G(); t.position.z = s * TZ; hull.add(t);
+    P(t, RB(L * .8, .06, TW, .02), K, -.05, .02, 0);                                        // Kette unten
+    P(t, RB(L * .86, .05, TW, .02), K, -.02, .5, 0);                                        // Kette oben
+    for (let i = 0; i < 26; i++) { P(t, RB(.04, .03, TW + .02, .006), 0x2a2a2a, -L * .42 + i * L * .82 / 25, .005, 0); P(t, RB(.04, .03, TW + .02, .006), 0x2a2a2a, -L * .42 + i * L * .82 / 25, .53, 0); }
+    for (const ex of [-1, 1]) { const tb = P(t, cached('p2tube', () => new THREE.CylinderGeometry(.27, .27, TW, 26, 1, true)), new THREE.MeshStandardMaterial({ color: K, roughness: .5, side: THREE.DoubleSide }), ex * L * .43, .27, 0, HALF, 0, 0); }   // Kette um Antriebs- und Leitrad (hohl, Räder bleiben sichtbar)
+    for (let i = 0; i < 5; i++) { const w = G(); w.position.set(-.78 + i * .36, .2, s * (TW / 2 + .01)); t.add(w);   // große Laufrollen
+      P(w, CY(.18, .18, .07, 26), GR, 0, 0, 0, HALF, 0, 0); P(w, CY(.165, .165, .075, 26), GR2, 0, 0, 0, HALF, 0, 0).scale.set(1, 1, 1); P(w, CY(.15, .15, .078, 26), GR, 0, 0, 0, HALF, 0, 0);
+      P(w, CY(.05, .05, .09, 14), GR2, 0, 0, 0, HALF, 0, 0); P(w, RB(.06, .015, .095, .004), K, 0, 0, 0);
+      P(t, RB(.05, .2, .05, .01), GR2, -.78 + i * .36 + .1, .32, s * .02, 0, 0, .7); }        // Schwingarme
+    for (let i = 0; i < 4; i++) { P(t, CY(.05, .05, .09, 14), GR, -.66 + i * .4, .46, s * .02, HALF, 0, 0); P(t, CY(.02, .02, .1, 8), GR2, -.66 + i * .4, .46, s * .02, HALF, 0, 0); }   // Stützrollen
+    const sp = G(); sp.position.set(L * .43, .3, s * .02); t.add(sp); P(sp, CY(.22, .22, .07, 24), GR, 0, 0, 0, HALF, 0, 0);   // Antriebsrad vorn
+    for (let k = 0; k < 18; k++) { const a = k / 18 * Math.PI * 2; P(sp, RB(.04, .04, .075, .008), GR, Math.cos(a) * .23, Math.sin(a) * .23, 0, 0, 0, a); }
+    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2; P(sp, SP(.012), GR2, Math.cos(a) * .17, Math.sin(a) * .17, s * .04); }
+    P(sp, CY(.07, .07, .09, 14), GR2, 0, 0, 0, HALF, 0, 0);
+    const id = G(); id.position.set(-L * .43, .28, s * .02); t.add(id); P(id, TO(.17, .025), GR, 0, 0, 0); P(id, CY(.06, .06, .1, 14), GR, 0, 0, 0, HALF, 0, 0);   // Speichen-Leitrad
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P(id, RB(.11, .025, .04, .005), GR2, Math.cos(a) * .1, Math.sin(a) * .1, 0, 0, 0, a); }
+    P(hull, RB(L * .98, .04, .36, .01), GR, 0, .6, s * .66);                                // Kettenblech
+    P(hull, RB(.24, .04, .36, .01), GR, L * .5, .55, s * .66, 0, 0, -.35);                  // Kotflügel vorn abgeschrägt
+    P(hull, RB(.8, .12, .14, .02), GR, -.15, .68, s * .76);                                   // Kasten auf dem Kettenblech
+    insignia(hull, side, .12, .05, .68, s * .832, s > 0 ? 0 : Math.PI);                    // Balkenkreuz auf dem Seitenkasten
+  }
+  // Rumpf
+  brick(hull, L * .9, .42, .86, GR, -.05, .48, 0, { studs: false });
+  P(hull, RB(.34, .32, .86, .04), GR, L * .44, .44, 0, 0, 0, -.55);                         // runder/schräger Bug
+  brick(hull, L * .9, .1, 1.1, GR, -.05, .73, 0, { studs: false });                          // Oberdeck (breiter als der Rumpf)
+  brick(hull, .5, .1, .9, GR, .62, .82, 0, { studs: false });                                // Fahrerplatte
+  P(hull, RB(.14, .1, .2, .03), GR2, .88, .84, .18);                                        // Sehklappe
+  for (const s of [-1, 1]) { P(hull, SP(.065), GR, 1.12, .82, s * .44); P(hull, CY(.05, .05, .02, 14), 0xf0efe6, 1.17, .82, s * .44, 0, 0, HALF); }   // Scheinwerfer
+  P(hull, CY(.13, .13, .04, 20), GR, 1.0, .8, -.34);                                         // Bremsluke
+  for (const s of [-1, 1]) P(hull, TO(.04, .01, Math.PI), 0x9aa0a4, 1.24, .58, s * .3, 0, HALF, 0);   // Haken vorn
+  // Heck: Lüftungsgitter, Kanister, oranger Abschlepphaken, Balkenkreuz, Antenne
+  for (const [x, z] of [[-.45, .25], [-.95, -.25]]) { P(hull, RB(.3, .015, .26, .005), 0x2e3236, x, .79, z); for (let i = 0; i < 6; i++) P(hull, RB(.28, .02, .012, .003), K, x, .8, z - .11 + i * .044); }
+  brick(hull, .3, .08, .38, GR2, -.68, .82, .12, { studs: false });
+  for (const [x, z] of [[-.9, .3], [-.9, .48]]) { P(hull, RB(.18, .16, .14, .02), LG2, x, .86, z); P(hull, CY(.03, .03, .04, 10), LG2, x + .1, .93, z); }
+  P(hull, CY(.06, .06, .1, 14), LG2, -.8, .88, .58, 0, 0, HALF);
+  P(hull, RB(.1, .18, .14, .02), OR, -L * .5 - .02, .6, -.3); P(hull, TO(.03, .01), OR, -L * .5 - .04, .73, -.3, 0, HALF, 0);
+  insignia(hull, side, .24, -L * .5 - .025, .58, .15, -HALF);
+  P(hull, CY(.008, .008, 1.4, 6), K, -.25, .86, -.5, 0, 0, HALF - .08);                     // umgelegte Antenne
+  P(hull, CY(.03, .03, .08, 10), K, -.93, .84, -.5);
+  // Turm: links versetzt, kantig mit abgeschrägten Ecken, Nummer 61, runde Kuppel mit Sehschlitzen, Rohr und MG
+  const tur = G(); tur.position.set(.15, .78, .12); hull.add(tur); u.turret = tur;
+  P(tur, CY(.36, .36, .05, 24), GR2, 0, .025, 0);                                             // Drehkranz
+  brick(tur, .9, .32, .66, GR, -.02, .21, 0, { studs: false });
+  for (const s of [-1, 1]) P(tur, RB(.22, .32, .14, .03), GR, .42, .21, s * .26, 0, s * .6, 0);   // abgeschrägte Vorderecken
+  P(tur, RB(.86, .06, .6, .02), GR, -.02, .4, 0);
+  for (const s of [-1, 1]) { quad(num, .22, .22, .18, .2, s * .332, s > 0 ? 0 : Math.PI, tur); P(tur, RB(.14, .07, .01, .004), 0x2e3236, -.2, .22, s * .331); }
+  quad(num, .2, .2, -.441, .21, 0, -HALF, tur);
+  const cu = G(); cu.position.set(-.18, .43, .02); tur.add(cu);
+  P(cu, CY(.17, .17, .1, 24), GR, 0, .05, 0); for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; P(cu, RB(.05, .03, .012, .004), K, Math.cos(a) * .172, .05, Math.sin(a) * .172, 0, -a + HALF, 0); }
+  P(cu, CY(.16, .16, .04, 24), GR, 0, .12, 0); P(cu, RB(.08, .08, .06, .01), GR2, -.16, .14, 0);
+  P(tur, RB(.16, .12, .1, .02), GR, .2, .46, -.16);
+  const br = G(); br.position.set(.46, .2, -.06); tur.add(br);
+  P(br, RB(.12, .2, .3, .03), GR2, 0, 0, 0);
+  P(br, CY(.03, .035, .9, 12), K, .5, .02, -.06, 0, 0, HALF); for (let i = 0; i < 4; i++) P(br, CY(.04, .04, .03, 12), 0x2a2a2a, .85 - i * .04, .02, -.06, 0, 0, HALF);   // Rohr mit Mündung
+  P(br, CY(.018, .018, .5, 8), K, .3, .02, .08, 0, 0, HALF); for (let i = 0; i < 6; i++) P(br, CY(.026, .026, .015, 8), 0x2a2a2a, .3 + i * .035, .02, .08, 0, 0, HALF);   // MG mit Kühlrippen
+  br.userData.muzzle = new THREE.Vector3(.96, .02, -.06); u.barrel = br; u.muzzles = [br];
+  shadow(g, L * .5); u.type = 'veh';
+  return g;
+}
 // Schwerer Panzer der Alliierten nach Foto (Churchill im Klemmbaustein-Stil): dunkelgrün, graue Ketten laufen ganz um den Rumpf,
 // viele kleine Laufrollen, Seitenkästen mit Schlammrinne, Luke und weiß-rot-weißem Streifen, kantiger Turm mit gelbem Quadrat
 function churchill(side) {
@@ -946,7 +1016,7 @@ export function buildUnit(key, side) {
   let g;
   switch (key) {
     case 'schwer': g = side === 'al' ? churchill(side) : tank(side, true); break;
-    case 'leicht': g = side === 'al' ? sherman(side) : tank(side, false); break;
+    case 'leicht': g = side === 'al' ? sherman(side) : panzer2(side); break;
     case 'trans': g = halftrack(side); break;
     case 'krad': g = krad(side); break;
     case 'art': g = howitzer(side); break;
