@@ -104,25 +104,17 @@ function harbor(g, w, d) { water(g, w, d, 0x2f6f9a); const along = w > d; brick(
 // Leere Straße wie im echten Aufbau: hellgraue Grundplatte, darauf verstreut flache Fliesen und Platten im selben Grau
 // (lange 1er-Fliesen, gestapelte Platten, einige schräg gelegt, Platten mit Mittelnoppe, ein kleiner Schrägstein)
 function road(g, w, d) {
-  const BASE = 0x8f8d86, C = [0x96948d, 0x8a8882], U = .1, H = .025, Y0 = .025;   // feines Raster: eine Noppe = 0,1 (wie eine große 32er-Grundplatte)
-  const cover = brick(g, w * .995, .05, d * .995, BASE, 0, 0, 0, { studs: false, r: .01 });   // deckt die groben Noppen der Feldplatte ab
-  const studGeo = new THREE.CylinderGeometry(.032, .032, .022, 10), studMat = plastic(BASE), mm = new THREE.Matrix4();
-  const nx = Math.round(w / U), nz = Math.round(d / U), im = new THREE.InstancedMesh(studGeo, studMat, nx * nz); let n = 0;
-  for (let i = 0; i < nx; i++) for (let k = 0; k < nz; k++) { mm.makeTranslation(-w / 2 + (i + .5) * w / nx, Y0 + .011, -d / 2 + (k + .5) * d / nz); im.setMatrixAt(n++, mm); }
-  im.receiveShadow = true; g.add(im);
-  const jumper = (x, y, z) => { const m = new THREE.Mesh(studGeo, plastic(C[0])); m.position.set(x, y + .011, z); g.add(m); };
-  const piece = (fx, fz, a, b, ry = 0, lvl = 0, jmp = false, c = C[0]) => {   // a x b in Noppen; flache Fliese, optional mit Mittelnoppe
-    const x = fx * w / 2, z = fz * d / 2, y = Y0 + lvl * H;
-    brick(g, a * U, H, b * U, c, x, y + H / 2, z, { studs: false, rot: [0, ry, 0], r: .006 }); if (jmp) jumper(x, y + H, z);
+  // Nur die normale Feldplatte (gleiche Noppen wie die Nachbarfelder), darauf ein paar flache Fliesen im Raster der Platte
+  const C = [0x9c9a93, 0x8a8882], H = .03, Y0 = .026;   // Y0 = Oberkante der Noppen der Feldplatte
+  const NX = w / Math.max(1, Math.round(w / .2)), NZ = d / Math.max(1, Math.round(d / .2));   // genau das Noppenraster der Feldplatte
+  const piece = (i, j, a, b, c = C[0], lvl = 0, jmp = false) => {   // Fliese a×b Noppen, linke obere Ecke auf Noppe (i, j) vom Feldrand
+    const x = -w / 2 + (i + a / 2) * NX, z = -d / 2 + (j + b / 2) * NZ, y = Y0 + lvl * H;
+    brick(g, a * NX - .008, H, b * NZ - .008, c, x, y + H / 2, z, { studs: false, r: .006 });
+    if (jmp) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .05, 14), plastic(c)); m.position.set(x, y + H + .025, z); g.add(m); }
   };
-  for (const [fx, fz, a, b, ry, j, c] of [
-    [-.62, -.7, 4, 2, 0, 0, 0], [-.7, -.62, 1, 2, 0, 1, 1], [-.3, -.82, 2, 1, 0, 0, 1], [.02, -.6, 1, 4, 0, 0, 0], [.3, -.72, 4, 1, -.55, 0, 1], [.62, -.78, 1, 2, 0, 0, 0],
-    [-.45, -.15, 1, 1, 0, 1, 1], [.05, -.12, 6, 1, 0, 0, 0], [.6, -.05, 4, 1, 0, 0, 1], [.82, .15, 1, 4, 0, 0, 0], [-.82, .3, 2, 2, 0, 1, 1],
-    [-.1, .4, 4, 3, 0, 0, 1], [.35, .32, 1, 3, 0, 0, 0], [.4, .55, 6, 1, 0, 0, 1], [.7, .45, 2, 2, 0, 1, 0], [-.55, .75, 1, 2, 0, 1, 0], [.05, .8, 4, 1, 0, 0, 1]]) piece(fx, fz, a, b, ry, 0, !!j, C[c]);
-  piece(-.1, .4, 2, 1, 0, 1, true, C[0]);                                                                   // gestapelt mit Noppe
-  piece(-.62, -.7, 2, 1, 0, 1, false, C[1]);
-  slope(g, .1, .06, .1, C[1], .5 * w / 2, Y0 + .03, .7 * d / 2, 0);                                         // kleiner Schrägstein
-  slope(g, .1, .06, .1, C[0], -.25 * w / 2, Y0 + .03, -.4 * d / 2, HALF);
+  // wenige flache Fliesen, dazwischen sieht man die Noppen der Platte (wie bei den Nachbarfeldern)
+  for (const [i, j, a, b, c, l, jm] of [[0, 0, 2, 1, 0], [3, 0, 1, 2, 1], [5, 1, 2, 1, 0], [1, 2, 3, 1, 1], [5, 3, 1, 2, 0, 0, 1], [0, 4, 1, 2, 0], [2, 4, 2, 2, 1], [2, 4, 1, 1, 0, 1, 1], [4, 6, 3, 1, 0], [1, 6, 2, 1, 1]])
+    piece(i, j, a, b, C[c], l || 0, !!jm);
 }
 function field(g) { for (let i = 0; i < 4; i++) bush(g, (R() - .5) * 1.1, (R() - .5) * 1.1); for (let i = 0; i < 6; i++) brick(g, .08, .05, .08, [0xf2d23a, 0xd23a2a, 0xf4f4f0][i % 3], (R() - .5) * 1.2, .03, (R() - .5) * 1.2, { studs: false }); const c = new THREE.Mesh(new THREE.CylinderGeometry(.3, .22, .04, 20), plastic(0x4a3a2a)); c.position.set((R() - .5) * .6, .02, (R() - .5) * .6); g.add(c); }
 
