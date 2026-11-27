@@ -1,2 +1,2 @@
 // Wird vom Build gesetzt: ändert sich, sobald sich ein 3D-Modell ändert
-export const FIG_V = '25ba1b6569';
+export const FIG_V = 'fc93bebc58';

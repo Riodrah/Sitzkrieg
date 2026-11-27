@@ -361,7 +361,7 @@ function tower3(g) {
   const sl = G(); sl.position.set(-.25, H + .16, .28); g.add(sl); sl.userData.sweep = true;   // Suchscheinwerfer schwenkt hin und her cyl(sl, .02, .08, 0x9aa0a4, 0, 0, 0); const lamp = cyl(sl, .06, .14, WHT2, 0, .07, .05, HALF, 0, 14); cyl(sl, .05, .01, 0xfff2b0, 0, .07, .12, HALF, 0, 14);
   cyl(g, .012, .75, 0x1b1b1b, -.4, H + .45, -.4); for (const y of [.55, .65]) cyl(g, .08, .02, 0xc8ccce, -.4, H + y, -.4, 0, 0, 18);   // Antennenmast mit Schüsseln
   cyl(g, .006, .35, 0x1b1b1b, -.3, H + .3, -.42, .15);
-  cyl(g, .012, .5, 0x1b1b1b, .42, H + .3, .42); const ws = new THREE.Mesh(new THREE.ConeGeometry(.05, .22, 10, 1, true), plastic(WHT2, { side: THREE.DoubleSide })); ws.rotation.z = HALF; ws.position.set(.53, H + .52, .42); g.add(ws); ws.userData.flutter = true;   // Windsack (flattert)
+  cyl(g, .012, .5, 0x1b1b1b, .42, H + .3, .42); const ws = new THREE.Mesh(new THREE.ConeGeometry(.05, .22, 10, 1, true), plastic(WHT2, { side: THREE.DoubleSide })); ws.rotation.z = -HALF; ws.position.set(.53, H + .52, .42); g.add(ws); ws.userData.flutter = true;   // Windsack: weite Öffnung am Mast, Spitze weht nach außen (flattert)
   // Kraftrad und Fass am Fuß
   cyl(g, .05, .1, 0x4d5530, .18, .05, -.18);
 }
