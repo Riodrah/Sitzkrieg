@@ -15,10 +15,13 @@ export class Fx {
     this.pool = Array.from({ length: 220 }, () => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, transparent: true, depthWrite: false })); s.visible = false; scene.add(s); return s; });
     this.tracers = Array.from({ length: 24 }, () => { const m = new THREE.Mesh(new THREE.CylinderGeometry(.012, .012, 1, 6), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false })); m.visible = false; scene.add(m); return { m, on: false }; });
     this.rings = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(new THREE.RingGeometry(.8, 1, 40), new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, depthWrite: false, side: THREE.DoubleSide })); m.rotation.x = -Math.PI / 2; m.visible = false; scene.add(m); return { m, on: false }; });
+    // Blutspritzer: kleine rote 1x1-Platten mit Noppe (Klemmbaustein-Stil)
+    const bGeo = new THREE.BoxGeometry(.06, .03, .06), sGeo = new THREE.CylinderGeometry(.018, .018, .016, 10), red = plastic(0xb3141a);
+    this.blood = Array.from({ length: 40 }, () => { const m = new THREE.Group(), a = new THREE.Mesh(bGeo, red), s = new THREE.Mesh(sGeo, red); s.position.y = .023; m.add(a, s); m.visible = false; scene.add(m); return { m, on: false, v: new THREE.Vector3(), w: new THREE.Vector3() }; });
     this.bricks = Array.from({ length: 36 }, () => { const m = new THREE.Mesh(new THREE.BoxGeometry(.08, .05, .08), plastic(0x777777)); m.visible = false; scene.add(m); return { m, on: false, v: new THREE.Vector3(), w: new THREE.Vector3() }; });
   }
   at(t, f) { this.events.push({ t: this.t + t, f }); }
-  clear() { this.events = []; for (const p of this.parts) p.s.visible = false; this.parts = []; for (const a of [...this.tracers, ...this.rings, ...this.bricks]) { a.on = false; a.m.visible = false; } this.lightI = 0; }
+  clear() { this.events = []; for (const p of this.parts) p.s.visible = false; this.parts = []; for (const a of [...this.tracers, ...this.rings, ...this.bricks, ...this.blood]) { a.on = false; a.m.visible = false; } this.lightI = 0; }
   // Einzelnes Teilchen
   spawn(o) {
     const s = this.pool.find(p => !p.visible); if (!s) return;
@@ -53,6 +56,11 @@ export class Fx {
   smoke(p, k = 1, n = 4, c = 0x7a756c) { for (let i = 0; i < n; i++) this.at(i * .06, () => this.spawn({ p: p.clone().add(rnd(.15 * k)), v: new THREE.Vector3(rr(.2), .4 + Math.random() * .4, rr(.2)), life: 1.2 + Math.random() * .6, s0: .2 * k, s1: .9 * k, c0: c, c1: 0xa8a398, a0: .6, tex: 'smoke', add: false, drag: 1 })); }
   dust(p, k = 1) { for (let i = 0; i < 5; i++) this.spawn({ p: p.clone().add(rnd(.2 * k)).setY(.05), v: new THREE.Vector3(rr(.8), .3 + Math.random() * .3, rr(.8)), life: .9, s0: .2 * k, s1: .7 * k, c0: 0xa08a60, c1: 0xc2ad84, a0: .55, tex: 'smoke', add: false, drag: 2 }); }
   fire(p, dir, k = 1) { this.spawn({ p, v: dir.clone().multiplyScalar(3.2 + Math.random()).add(rnd(.4)), life: .45, s0: .12 * k, s1: .7 * k, c0: 0xfff0a0, c1: 0xe0300a, drag: 1.2, g: 1.2 }); }
+  splatter(p, n = 12, k = 1) {   // rote Steinchen spritzen vom Treffer weg (nach hinten, nie Richtung Kamera), bleiben kurz liegen
+    for (let i = 0; i < n; i++) { const b = this.blood.find(x => !x.on); if (!b) break; b.on = true; b.m.visible = true;
+      b.m.position.copy(p).add(rnd(.06)); b.m.scale.setScalar(.7 + Math.random() * .6);
+      b.v.set((.4 + Math.random() * 1.4) * k, (1.2 + Math.random() * 1.6) * k, -(.2 + Math.random() * .9) * k); b.w.set(rr(10), rr(10), rr(10)); b.life = 1.8 + Math.random() * .6; }
+  }
   sparkle(p, tex = 'plus', c = 0x7cff8a, n = 8) { for (let i = 0; i < n; i++) this.at(i * .07, () => this.spawn({ p: p.clone().add(rnd(.35)), v: new THREE.Vector3(rr(.2), .8 + Math.random() * .5, rr(.2)), life: 1.0, s0: .16, s1: .05, c0: c, tex })); }
   // ---- Schleife ----
   update(dt) {
@@ -68,11 +76,14 @@ export class Fx {
     for (const t of this.tracers) if (t.on) { t.d += t.speed * dt; const vis = Math.min(t.len, .9); t.m.position.copy(t.p).addScaledVector(t.dir, t.d - vis / 2); t.m.scale.y = vis; if (t.d > t.len + vis) { t.on = false; t.m.visible = false; } }
     for (const r of this.rings) if (r.on) { r.age += dt; const s = .2 + r.age * 4 * r.k; r.m.scale.setScalar(s); r.m.material.opacity = Math.max(0, .7 - r.age * 1.6); if (r.age > .45) { r.on = false; r.m.visible = false; } }
     for (const b of this.bricks) if (b.on) { b.life -= dt; b.v.y -= 9 * dt; b.m.position.addScaledVector(b.v, dt); if (b.m.position.y < .03) { b.m.position.y = .03; b.v.y *= -.35; b.v.x *= .6; b.v.z *= .6; b.w.multiplyScalar(.6); } b.m.rotation.x += b.w.x * dt; b.m.rotation.y += b.w.y * dt; b.m.rotation.z += b.w.z * dt; if (b.life <= 0) { b.on = false; b.m.visible = false; } }
+    for (const b of this.blood) if (b.on) { b.life -= dt; if (b.m.position.y > .035 || b.v.y > 0) { b.v.y -= 9 * dt; b.m.position.addScaledVector(b.v, dt); b.m.rotation.x += b.w.x * dt; b.m.rotation.y += b.w.y * dt; b.m.rotation.z += b.w.z * dt; }
+      if (b.m.position.y < .035) { b.m.position.y = .035; b.v.set(0, 0, 0); b.m.rotation.x = b.m.rotation.z = 0; }   // flach liegen bleiben
+      if (b.life <= 0) { b.on = false; b.m.visible = false; } }
     this.lightI *= Math.pow(.0005, dt); this.light.intensity = this.lightI;
     if (this.shakeT > 0) { this.shakeT -= dt; } else this.shakeA = 0;
     return this.shakeA * Math.max(0, this.shakeT) * 3;
   }
-  get busy() { return this.parts.length || this.events.length || this.tracers.some(t => t.on) || this.bricks.some(b => b.on) || this.lightI > .05; }
+  get busy() { return this.parts.length || this.events.length || this.tracers.some(t => t.on) || this.bricks.some(b => b.on) || this.blood.some(b => b.on) || this.lightI > .05; }
 }
 const rr = a => (Math.random() - .5) * 2 * a;
 const rnd = a => new THREE.Vector3(rr(a), rr(a), rr(a));

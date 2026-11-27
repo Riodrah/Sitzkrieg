@@ -105,6 +105,7 @@ function breakApart(v, power = 1, only = null) {
     (function walk(o) { for (const c of [...o.children]) { if (c === t.userData.shadow) continue; if (c.userData.brick || (c.isMesh && !c.children.some(k => k.isMesh)) || c === tur) chunks.push(c); else walk(c); } })(t);
     const center = new THREE.Box3().setFromObject(t).getCenter(new THREE.Vector3());
     if (t.userData.type === 'veh') setTimeout(() => wreckSmoke(v, center.clone().setY(0)), 450);
+    else v.fx.splatter(center.clone().setY(center.y + .15), 12, power);                // Soldaten: Blutspritzer aus roten Klemmbausteinen
     for (const m of chunks) {
       const isTur = m === tur;
       v.scene.attach(m);
