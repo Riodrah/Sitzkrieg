@@ -273,6 +273,10 @@ function build() {
     const t = G(); t.position.y = .025; g.add(t); terrain(x.p.key, t, w, d);
     if (x.p.key === 'strand' && g.position.x < 0) t.rotation.y = Math.PI;   // Wasser zum Kartenrand
     if (x.p.key === 'zug') { const p = w > d ? g.position.z : g.position.x; if (p > .01) t.rotation.y = Math.PI; }   // Gleis zum Kartenrand
+    if (x.p.key === 'hafen') {   // Schiff liegt im Modell auf der langen Seite +z (quer: +x) – immer zum nächsten Spielfeldrand drehen
+      const p = w > d ? g.position.z : g.position.x;
+      if (p < -.01) t.rotation.y = Math.PI;                       // in der Mittelspalte gibt es keinen Rand an der langen Seite: bleibt wie gebaut
+    }
     if (x.p.key === 'kirche') { const p = w > d ? g.position.z : g.position.x; if (p > .01) t.rotation.y = Math.PI; }   // Kirchenportal zur Kartenmitte drehen
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
