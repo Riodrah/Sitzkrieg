@@ -186,6 +186,7 @@ export function renegades(g) {
   for (const [x, z] of [[-.24, -.12], [-.08, -.12], [.08, -.12], [.24, -.12], [-.18, .12], [0, .12], [.18, .12]]) renegade(a, x, z, false);
   const b = G(); b.position.set(.4, 0, .12); b.rotation.y = -.35; g.add(b); brick(b, .66, .03, .48, TANP, 0, .015, 0);
   for (const [x, z] of [[-.24, -.14], [-.08, -.16], [.08, -.14], [.24, -.16], [-.14, .1], [.04, .12], [.22, .1]]) renegade(b, x, z, true);
+  return [a, b];
 }
 // Freien Platz für eine Felderweiterung suchen: nichts darf in Gebäuden, Bäumen, Fahrzeugen oder der Flagge stecken
 function placeProp(g, e, w, d) {
@@ -193,21 +194,35 @@ function placeProp(g, e, w, d) {
   const gi = new THREE.Matrix4().copy(g.matrixWorld).invert(), obs = [], tmp = new THREE.Box3();
   g.traverse(o => { if (!o.isMesh || o.isSprite) return; for (let p = o; p && p !== g; p = p.parent) if (p === e) return;
     tmp.setFromObject(o).applyMatrix4(gi); if (tmp.max.y > .1) obs.push(tmp.clone()); });   // flaches Bodenzeug (Gras, Fliesen, Platte) zählt nicht
-  const fb = new THREE.Box3().setFromObject(e).applyMatrix4(gi); if (fb.isEmpty()) return;
-  const ox = fb.min.x - e.position.x, ox2 = fb.max.x - e.position.x, oz = fb.min.z - e.position.z, oz2 = fb.max.z - e.position.z;
-  const hw = w / 2 - .02, hd = d / 2 - .02, M = .03; let best = null;
-  for (let x = -hw - ox; x <= hw - ox2 + 1e-6; x += .04) for (let z = -hd - oz; z <= hd - oz2 + 1e-6; z += .04) {
-    let s = 0; for (const b of obs) { const ow = Math.min(x + ox2, b.max.x + M) - Math.max(x + ox, b.min.x - M), od = Math.min(z + oz2, b.max.z + M) - Math.max(z + oz, b.min.z - M); if (ow > 0 && od > 0) s += ow * od; }
-    const sc = s * 100 + Math.hypot(x - e.position.x, z - e.position.z) * .01;   // möglichst frei, sonst möglichst nah an der alten Ecke
-    if (!best || sc < best.sc) best = { sc, x, z };
+  // Raster (4 cm): belegte Zellen des Feldes und Umriss der Erweiterung; Lage und Drehung (8 Richtungen) durchprobieren
+  const cs = .04, M = .03, nx = Math.floor(w / cs), nz = Math.floor(d / cs), cx = w / 2, cz = d / 2, x0 = e.position.x, z0 = e.position.z;
+  const blocked = new Uint8Array(nx * nz);
+  for (const b of obs) for (let i = Math.max(0, Math.floor((b.min.x - M + cx) / cs)); i <= Math.min(nx - 1, Math.floor((b.max.x + M + cx) / cs)); i++)
+    for (let j = Math.max(0, Math.floor((b.min.z - M + cz) / cs)); j <= Math.min(nz - 1, Math.floor((b.max.z + M + cz) / cs)); j++) blocked[j * nx + i] = 1;
+  let best = null;
+  for (let k = 0; k < 8; k++) {
+    e.rotation.y = k * Math.PI / 4; e.position.set(0, e.position.y, 0); g.updateMatrixWorld(true);
+    const mask = new Set();
+    e.traverse(o => { if (!o.isMesh || o.isSprite) return; tmp.setFromObject(o).applyMatrix4(gi); if (tmp.isEmpty() || tmp.max.y < .02) return;
+      for (let i = Math.floor(tmp.min.x / cs); i <= Math.floor(tmp.max.x / cs); i++) for (let j = Math.floor(tmp.min.z / cs); j <= Math.floor(tmp.max.z / cs); j++) mask.add(i + ',' + j); });
+    if (!mask.size) continue;
+    const cells = [...mask].map(s => s.split(',').map(Number)); let i0 = 1e9, i1 = -1e9, j0 = 1e9, j1 = -1e9;
+    for (const [i, j] of cells) { i0 = Math.min(i0, i); i1 = Math.max(i1, i); j0 = Math.min(j0, j); j1 = Math.max(j1, j); }
+    const oi = Math.floor(cx / cs), oj = Math.floor(cz / cs);   // Zelle der Feldmitte
+    for (let si = -oi - i0; si + oi + i1 < nx; si++) for (let sj = -oj - j0; sj + oj + j1 < nz; sj++) {
+      let s = 0; for (const [i, j] of cells) s += blocked[(j + sj + oj) * nx + (i + si + oi)];
+      const x = si * cs, z = sj * cs, sc = s + Math.hypot(x - x0, z - z0) * .01 + (k ? .002 : 0);   // möglichst frei, sonst nah an der alten Ecke
+      if (!best || sc < best.sc) best = { sc, x, z, ry: k * Math.PI / 4 };
+    }
   }
-  if (best) e.position.set(best.x, e.position.y, best.z);
+  if (best) { e.rotation.y = best.ry; e.position.set(best.x, e.position.y, best.z); } else { e.rotation.y = 0; e.position.set(x0, e.position.y, z0); }
 }
-function extProp(g, name, w = 1.54, d = 1.54) {
+export function extProp(g, name, w = 1.54, d = 1.54) {
+  // Mehrteilige Erweiterungen: jedes Teil sucht sich einzeln einen freien Platz (die schon gesetzten zählen als belegt)
+  if (/Abtr/.test(name)) { const parts = renegades(g); for (const p of parts) placeProp(g, p, w, d); return parts[0]; }
+  if (/Stachel/.test(name)) { const parts = [wireRoll(g, -.55, .52, .12), wireRoll(g, 0, .45, -.08), wireRoll(g, -.28, .08, .25)]; for (const p of parts) placeProp(g, p, w, d); return parts[0]; }
   const e = G(); e.position.set(-.5, 0, .5); g.add(e);
-  if (/Abtr/.test(name)) { e.position.set(0, 0, 0); renegades(e); placeProp(g, e, w, d); return e; }
-  if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
-  else if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
+  if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
   else if (/Jeep/.test(name)) jeep(e, .55, -.15, .3, .38);
   else if (/Flugzeug/.test(name)) wreck(e, .4, -.35, .3, .32, S3 && S3.smokes);
   else if (/Kutsche/.test(name)) cart(e, .3, -.1, .35);
