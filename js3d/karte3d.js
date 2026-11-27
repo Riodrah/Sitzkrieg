@@ -89,6 +89,36 @@ export function cart(p, x, z, ry, s = .45) {
   return c;
 }
 const LGRC = 0xa3a8ab;
+// Jeep mit Anhänger wie im echten Aufbau: oliv, weißer Stern auf der Haube, umgeklappte Windschutzscheibe, graue Sitze,
+// Axt an der Seite, Antenne, Anhänger mit sandfarbenem Boden, Stern und rotem Rücklicht
+export function jeep(p, x, z, ry, s = .4) {
+  const j = G(); j.position.set(x, 0, z); j.rotation.y = ry; j.scale.setScalar(s); p.add(j);
+  const OL = 0x5f5934, OL2 = 0x4c472a, GY = 0x6f6d66, K = 0x1b1b1b, M = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, plastic(col)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; j.add(m); return m; };
+  const B = (a, b, c) => new THREE.BoxGeometry(a, b, c);
+  const wheel = (wx, wz) => { M(new THREE.CylinderGeometry(.17, .17, .13, 24), K, wx, .17, wz, HALF); M(new THREE.CylinderGeometry(.1, .1, .135, 20), OL, wx, .17, wz, HALF); M(new THREE.CylinderGeometry(.03, .03, .14, 10), OL2, wx, .17, wz, HALF); };
+  for (const sz of [-1, 1]) { wheel(.42, sz * .32); wheel(-.38, sz * .32); M(B(.42, .04, .16), OL, .42, .36, sz * .32); M(B(.36, .04, .16), OL, -.38, .36, sz * .32); }   // Räder + flache Kotflügel
+  brick(j, .8, .22, .5, OL, -.15, .4, 0, { studs: false, r: .015 });                                 // Wanne
+  for (const sz of [-1, 1]) { brick(j, .8, .06, .06, OL, -.15, .54, sz * .22, { studs: false }); for (let i = 0; i < 4; i++) M(new THREE.CylinderGeometry(.025, .025, .02, 10), OL, -.5 + i * .23, .58, sz * .22); }   // Wannenrand mit kleinen Noppen
+  brick(j, .5, .2, .48, OL, .45, .44, 0, { studs: false, r: .015 });                                 // Motorhaube
+  insignia(j, 'al', .34, .45, .545, 0, 0, -HALF);                                                    // weißer Stern
+  for (let i = 0; i < 6; i++) M(B(.01, .16, .025), OL2, .705, .42, -.13 + i * .052);                 // Kühlergrill
+  M(B(.05, .05, .62), OL, .74, .25, 0); for (const sz of [-1, 1]) M(B(.1, .03, .03), OL, .7, .27, sz * .25, 0, 0, .3);   // Stoßstange
+  M(B(.03, .03, .5), OL, .22, .56, 0); M(B(.22, .03, .03), OL, .33, .56, .23); M(B(.22, .03, .03), OL, .33, .56, -.23); M(B(.03, .03, .5), OL, .44, .56, 0); M(B(.03, .03, .5), OL, .33, .565, 0);   // umgeklappte Scheibe
+  M(new THREE.TorusGeometry(.06, .012, 6, 16), K, .12, .6, -.1, 0, HALF, .5);                        // Lenkrad
+  for (const sz of [-1, 1]) { M(B(.14, .05, .16), GY, .0, .52, sz * .12); M(B(.04, .16, .16), GY, -.08, .6, sz * .12, 0, 0, .15); }   // Vordersitze
+  M(B(.16, .05, .4), GY, -.38, .52, 0); M(B(.04, .15, .4), GY, -.47, .6, 0);                         // Rückbank
+  M(new THREE.CylinderGeometry(.012, .012, .32, 8), 0xb08a52, .2, .4, .255, 0, 0, HALF); M(B(.06, .07, .015), 0xb8bcc0, .05, .4, .258);   // Axt
+  M(new THREE.CylinderGeometry(.008, .012, .55, 6), K, -.52, .78, .22, .15, 0, .15);                 // Antenne
+  M(new THREE.CylinderGeometry(.02, .02, .3, 8), OL2, -.68, .3, 0, 0, 0, HALF);                      // Deichsel
+  const tr = G(); tr.position.set(-1.12, 0, 0); j.add(tr);                                          // Anhänger
+  const T = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, plastic(col)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; tr.add(m); return m; };
+  T(B(.6, .04, .46), 0xc8a46a, 0, .3, 0);                                                            // Boden
+  for (const sz of [-1, 1]) { T(B(.62, .2, .05), OL, 0, .38, sz * .235); T(B(.3, .04, .14), OL, 0, .3, sz * .3); }
+  for (const sx of [-1, 1]) T(B(.05, .2, .42), OL, sx * .29, .38, 0);
+  for (const sz of [-1, 1]) { T(new THREE.CylinderGeometry(.15, .15, .1, 22), K, 0, .15, sz * .3, HALF); T(new THREE.CylinderGeometry(.09, .09, .105, 18), OL, 0, .15, sz * .3, HALF); }
+  insignia(tr, 'al', .14, .08, .36, .262); T(new THREE.CylinderGeometry(.035, .035, .02, 14), 0xff5a1a, -.316, .38, .17, 0, 0, HALF);   // Stern + Rücklicht
+  return j;
+}
 // Flugzeugwrack wie im echten Aufbau: Sturzkampfbomber in Sand/Grün-Tarnung, zerbrochen in Nase, Mittelteil mit Kanzel, Heck,
 // ein Flügel schräg aufgestellt, der zweite abgebrochen am Boden, Bombe, Fahrwerksverkleidung, lose Steine.
 // Dazu Rauch aus runden grauen 1x1-Steinen (wie beim Feuer-Bildschirm), der auf der Karte langsam aufsteigt.
@@ -162,7 +192,7 @@ function extProp(g, name) {
   const e = G(); e.position.set(-.5, 0, .5); g.add(e);
   if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
   else if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
-  else if (/Jeep/.test(name)) { brick(e, .6, .2, .32, /Jeep/.test(name) ? 0x5f6b3a : 0x2a3a5a, 0, .2, 0); brick(e, .3, .14, .3, 0x9fd2ea, -.05, .37, 0, { studs: false }); for (const x of [-.2, .2]) for (const z of [-.17, .17]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 14), plastic(0x1b1b1b)); w.rotation.x = HALF; w.position.set(x, .08, z); e.add(w); } }
+  else if (/Jeep/.test(name)) jeep(e, .55, -.15, .3, .38);
   else if (/Flugzeug/.test(name)) wreck(e, .4, -.35, .3, .32, S3 && S3.smokes);
   else if (/Kutsche/.test(name)) cart(e, .3, -.1, .35);
   else { for (let i = 0; i < 4; i++) sandbag(e, i * .17, .07, 0); }
