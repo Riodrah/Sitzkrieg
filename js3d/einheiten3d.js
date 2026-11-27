@@ -322,8 +322,8 @@ async function roundEnd() {
   const scene = new THREE.Scene(); lights(scene, RER);
   const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : buildUnit(key, 'de'), piv = new THREE.Group(); scene.add(piv); piv.add(g);
   const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
-  const h = Math.max(70, (ic.clientHeight || 150) - 8), w = Math.max(120, Math.min(ic.clientWidth || 260, Math.round(h * 1.9))), a = w / h;   // passt in den Bildbereich der Karte
-  const cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.12, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
+  const h = Math.max(90, (ic.clientHeight || 230) - 4), w = Math.max(140, Math.min(ic.clientWidth || 420, Math.round(h * 1.8))), a = w / h;   // füllt den Bildbereich der Karte
+  const cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.02, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
   RER.setSize(w, h, false); RER.domElement.style.width = w + 'px'; RER.domElement.style.height = h + 'px';
   if (slot) slot.replaceChildren(RER.domElement); else ic.appendChild(RER.domElement);
   const me = reTurn = { t0: performance.now() };
