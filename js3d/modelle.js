@@ -556,6 +556,76 @@ function tankDetails(hull, tur, br, side, heavy, L, Wd, r, hy, c, u) {
     if (heavy) for (const sz of [-1, 1]) for (let i = 0; i < 3; i++) P(hull, RB(.32, .14, .06, .02), MT, -L * .33 + i * L * .33, r * 1.55, sz * (Wd + .22));   // Laufwerksträger (VVSS)
   }
 }
+// Leichter Panzer der Alliierten nach Foto (Sherman im Klemmbaustein-Stil): olivgrün, drei Laufwerksgruppen mit Federn,
+// runde Getriebenase, schräger Bug mit Kisten, rundlicher Turm mit langem Rohr, Heck mit grauen Platten, Holzkiste, Sandsack
+function sherman(side) {
+  const g = G(), u = g.userData, hull = G(); g.add(hull); u.body = hull;
+  const OL = 0x4f6a3a, OL2 = 0x405830, K = 0x161616, GRY = 0x8e9089, BRN = 0x94642a, TANS = 0xd9c9a0, RD = 0xd8401c, L = 2.6, TZ = .7, hy = .34;
+  // Laufwerk je Seite: Kette, drei Drehgestelle mit je zwei Rädern, Federn und Stützrolle, gezahntes Antriebsrad, Leitrad
+  for (const s of [-1, 1]) {
+    const t = G(); t.position.z = s * TZ; hull.add(t);
+    P(t, RB(L * .88, .3, .3, .05), K, 0, .16, 0);                                                       // Kette (flach, Ketten-Glieder darunter)
+    for (const ex of [-1, 1]) P(t, CY(.15, .15, .3, 18), K, ex * L * .44, .17, 0, HALF, 0, 0);          // runde Kettenenden um Antriebs- und Leitrad
+    for (let i = 0; i < 34; i++) P(t, RB(.035, .03, .31, .006), 0x2a2a2a, -L * .44 + i * L * .88 / 33, .015, 0);
+    for (const bx of [-.72, 0, .72]) {
+      const bg = G(); bg.position.set(bx, 0, s * .17); t.add(bg);
+      for (const wx of [-.17, .17]) { const w = G(); w.position.set(wx, .14, 0); bg.add(w); P(w, CY(.12, .12, .06, 22), OL, 0, 0, 0, HALF, 0, 0); P(w, CY(.05, .05, .08, 12), OL2, 0, 0, 0, HALF, 0, 0);
+        for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2; P(w, CY(.016, .016, .065, 8), OL2, Math.cos(a) * .08, Math.sin(a) * .08, 0, HALF, 0, 0); } }
+      P(bg, RB(.42, .07, .05, .02), OL, 0, .2, s * .03);
+      for (const sx of [-.06, .06]) P(bg, RB(.05, .2, .05, .01), OL, sx, .3, s * .04);
+      P(bg, RB(.22, .06, .06, .01), OL, 0, .41, s * .04); P(bg, CY(.04, .04, .1, 10), OL2, -.05, .43, s * .08, HALF, 0, 0);
+    }
+    const sp = G(); sp.position.set(L * .45, .3, s * .17); t.add(sp); P(sp, CY(.16, .16, .07, 20), OL, 0, 0, 0, HALF, 0, 0);
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; P(sp, RB(.045, .045, .07, .01), OL, Math.cos(a) * .17, Math.sin(a) * .17, 0, 0, 0, a); }
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P(sp, CY(.015, .015, .08, 8), OL2, Math.cos(a) * .1, Math.sin(a) * .1, 0, HALF, 0, 0); }
+    const id = G(); id.position.set(-L * .45, .22, s * .17); t.add(id); P(id, CY(.14, .14, .06, 20), OL, 0, 0, 0, HALF, 0, 0);
+    for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; P(id, RB(.11, .03, .065, .008), OL2, Math.cos(a) * .06, Math.sin(a) * .06, 0, 0, 0, a); }
+  }
+  // Wanne: Unterteil, runde Getriebenase, breite Oberwanne mit gerundeten Kanten, schräger Bug
+  brick(hull, L * .86, .3, 1.15, OL, -.05, hy + .15, 0, { studs: false });
+  P(hull, CY(.17, .17, 1.15, 22), OL, L * .37, hy + .14, 0, HALF, 0, 0);
+  brick(hull, L * .62, .3, 1.5, OL, -.34, hy + .45, 0, { studs: false });
+  for (const s of [-1, 1]) P(hull, RB(L * .62, .3, .3, .1), OL, -.34, hy + .45, s * .72);   // Seitenkästen: flache Außenseite für die Aufschrift
+  const gl = new THREE.Shape(); gl.moveTo(0, 0); gl.lineTo(.62, 0); gl.lineTo(0, .3); gl.closePath();   // schräger Bug (Glacis) vom Turm zur Getriebenase
+  const glm = new THREE.Mesh(cached('glacis', () => { const e = new THREE.ExtrudeGeometry(gl, { depth: 1.74, bevelEnabled: true, bevelThickness: .02, bevelSize: .02, bevelSegments: 2 }); e.translate(0, 0, -.87); return e; }), plastic(OL));
+  glm.position.set(-.34 + L * .31, hy + .3, 0); glm.castShadow = true; hull.add(glm);
+  for (const s of [-1, 1]) for (let i = 0; i < 3; i++) P(hull, RB(.28, .012, .012, .003), OL2, -1.05 + i * .3, hy + .55, s * .872);   // Plattenfugen an der Seite
+  // Bug: Kisten links, Bug-MG, Scheinwerfer mit Schutzbügel, Haken
+  brick(hull, .26, .26, .42, BRN, L * .44, hy + .32, -.5, { studs: false }); brick(hull, .22, .22, .36, GRY, L * .4, hy + .43, -.45, { studs: false });
+  for (let i = 0; i < 6; i++) P(hull, SP(.012), 0x7a521e, L * .44 + .132, hy + .2 + (i % 3) * .1, -.62 + Math.floor(i / 3) * .2);
+  P(hull, SP(.06), OL2, .62, hy + .52, .3); P(hull, CY(.02, .02, .2, 8), K, .72, hy + .5, .3, 0, 0, HALF - .3);
+  for (const s of [-1, 1]) { P(hull, CY(.05, .05, .06, 14), OL2, L * .45, hy + .36, s * .62, 0, 0, HALF); P(hull, TO(.06, .012, Math.PI), OL, L * .46, hy + .38, s * .62, 0, HALF, 0); }
+  // Heck: graue Platten, Holzkiste, Sandsack, Werkzeugkasten, Axt, rote Rücklichter, Schmutzfänger
+  const dy = hy + .61;
+  brick(hull, .5, .06, .45, GRY, -L * .3, dy, .22, { studs: false }); brick(hull, .5, .06, .45, GRY, -L * .3, dy, -.24, { studs: false });
+  const box2 = G(); box2.position.set(-L * .16, dy + .14, -.22); hull.add(box2); brick(box2, .32, .24, .6, BRN, 0, 0, 0, { studs: false });
+  for (const zz of [-.18, .18]) P(box2, RB(.33, .02, .03, .005), 0x7a521e, 0, .12, zz); P(box2, RB(.04, .04, .1, .01), 0x7a521e, .17, .03, 0);
+  P(hull, cached('sbag', () => new THREE.CapsuleGeometry(.1, .24, 6, 12)), TANS, -L * .44, dy + .1, .38, 0, .3, HALF).scale.set(1, .6, 1.2);
+  const tb = G(); tb.position.set(-L * .22, dy + .07, .5); hull.add(tb); brick(tb, .28, .1, .24, OL, 0, 0, 0, { studs: false }); P(tb, TO(.045, .01, Math.PI), OL2, 0, .06, 0, 0, HALF, 0);
+  P(hull, CY(.018, .018, .44, 8), 0xb8822e, -L * .08, dy + .02, .62, 0, 0, HALF); P(hull, RB(.1, .02, .1, .01), WHT, -L * .08 - .22, dy + .02, .62);
+  for (const s of [-1, 1]) { P(hull, CY(.04, .04, .03, 14), RD, -L * .45, dy - .04, s * .66, 0, 0, HALF); P(hull, RB(.04, .24, .3, .01), OL, -L * .47, hy + .2, s * .72); }
+  // Seitenaufschrift: Stern und „USA 3174062“
+  const lab = (() => { const c = document.createElement('canvas'); c.width = 256; c.height = 128; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.font = '700 50px Arial,sans-serif'; x.textAlign = 'center'; x.fillText('USA', 128, 52); x.fillText('3174062', 128, 108); const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; return tx; })();
+  for (const s of [-1, 1]) {
+    const m = new THREE.Mesh(cached('pl', () => new THREE.PlaneGeometry(1, 1)), new THREE.MeshStandardMaterial({ map: lab, transparent: true, roughness: .5, polygonOffset: true, polygonOffsetFactor: -2 }));
+    m.scale.set(.46, .23, 1); m.position.set(-.55, hy + .45, s * .873); m.rotation.y = s > 0 ? 0 : Math.PI; hull.add(m);
+    insignia(hull, side, .24, .2, hy + .45, s * .873, s > 0 ? 0 : Math.PI);
+  }
+  // Turm: rundlich, Blende mit langem Rohr, Kuppel mit Luke, zweite Luke, Periskop, Antenne
+  const tur = G(); tur.position.set(.05, hy + .6, 0); hull.add(tur); u.turret = tur;
+  P(tur, CY(.5, .55, .4, 28), OL, 0, .2, 0).scale.set(1.08, 1, 1);
+  P(tur, CY(.46, .5, .08, 28), OL2, 0, .44, 0).scale.set(1.08, 1, 1);
+  for (let i = 0; i < 4; i++) P(tur, RB(.3, .1, .02, .01), OL2, -.15 + (i % 2) * .2, .12 + Math.floor(i / 2) * .14, (i < 2 ? 1 : -1) * .54);   // Steinfugen
+  const cu = G(); cu.position.set(-.12, .46, -.2); tur.add(cu); P(cu, CY(.18, .2, .1, 24), OL, 0, .05, 0); P(cu, CY(.15, .15, .03, 24), OL2, 0, .11, 0); P(cu, CY(.06, .06, .02, 16), OL, 0, .13, 0);
+  P(tur, CY(.1, .1, .05, 18), OL, .12, .49, .22); P(tur, CY(.04, .04, .12, 10), OL, -.32, .54, .25); P(tur, CY(.02, .02, .06, 8), K, -.32, .63, .25);
+  P(tur, CY(.008, .014, 1.1, 6), K, -.4, 1.0, -.36); P(tur, CY(.035, .035, .1, 10), OL, -.4, .5, -.36);
+  const br = G(); br.position.set(.56, .22, 0); tur.add(br);
+  P(br, RB(.18, .28, .42, .05), OL, 0, 0, 0); P(br, RB(.1, .2, .16, .03), OL2, .1, 0, 0);
+  P(br, CY(.05, .055, 1.2, 18), OL, .7, 0, 0, 0, 0, HALF); P(br, CY(.06, .06, .06, 18), OL2, 1.28, 0, 0, 0, 0, HALF);
+  br.userData.muzzle = new THREE.Vector3(1.33, 0, 0); u.barrel = br; u.muzzles = [br];
+  shadow(g, L * .5); u.type = 'veh';
+  return g;
+}
 // Transporter nach Foto (offene Zugmaschine mit Halbketten im Klemmbaustein-Stil): sandfarben, lange Motorhaube mit Lüftungsschlitzen,
 // Kotflügel über den Vorderrädern, schräge Windschutzscheibe, drei schwarze Sitzbänke, Kasten mit Gepäckgitter hinten, Speichen-Laufrollen
 function halftrack(side) {
@@ -812,7 +882,7 @@ export function buildUnit(key, side) {
   let g;
   switch (key) {
     case 'schwer': g = tank(side, true); break;
-    case 'leicht': g = tank(side, false); break;
+    case 'leicht': g = side === 'al' ? sherman(side) : tank(side, false); break;
     case 'trans': g = halftrack(side); break;
     case 'krad': g = krad(side); break;
     case 'art': g = howitzer(side); break;
