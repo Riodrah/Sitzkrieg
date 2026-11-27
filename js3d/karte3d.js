@@ -284,7 +284,7 @@ function setup(box) {
       for (const o of L.flutter) o.rotation.y = Math.sin(t * 3.1) * .3 + Math.sin(t * 7.3) * .08;
       for (const o of L.wave) { const k = (t * .3 + o.userData.wave.ph) % 1; o.position.x = o.userData.wave.x0 - k * .14; o.scale.z = 1 - k * .5; }
       for (const pf of L.puffs) { const k = (t * pf.sp + pf.ph) % 1;   // jeder Stein mit eigenem Versatz, Tempo und Schwanken
-        pf.m.position.set(pf.p0.x + pf.ox * k * 2 - k * .14 + Math.sin(t * 1.3 + pf.wob) * pf.sw * k, pf.p0.y + k * 1.05, pf.p0.z + pf.oz * k * 2 + Math.cos(t * 1.1 + pf.wob) * pf.sw * .7 * k); pf.m.scale.setScalar(.5 + k * 1.1); pf.m.visible = k > .02 && k < .97 && !(S3.drops && S3.drops.length); }
+        pf.m.position.set(pf.p0.x + pf.ox * k * 3.5 - k * .2 + Math.sin(t * 1.3 + pf.wob) * pf.sw * 1.4 * k, pf.p0.y + k * 1.3, pf.p0.z + pf.oz * k * 3.5 + Math.cos(t * 1.1 + pf.wob) * pf.sw * k); pf.m.scale.setScalar(.6 + k * 1.5); pf.m.visible = k > .02 && k < .97 && !(S3.drops && S3.drops.length); }
       if (L.sway.length || L.sweep.length || L.flutter.length || L.wave.length || L.puffs.length) S3.dirty = true;
     }
     for (const f of S3.flags) { const p = f.userData.cloth.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) + .25; p.setZ(i, Math.sin(t * 5 + x * 9) * .05 * x * 2); } p.needsUpdate = true; S3.dirty = true; }
@@ -386,7 +386,7 @@ function build() {
     const u = o.userData; if (u.sway != null) L.sway.push(o); if (u.sweep) L.sweep.push(o); if (u.flutter) L.flutter.push(o); if (u.wave) L.wave.push(o);
     if (u.chimney) { let p = o; while (p && p.userData.pi == null) p = p.parent; if (!p) return;
       const top = p.worldToLocal(o.getWorldPosition(new THREE.Vector3())); top.y += .03;
-      for (let i = 0; i < 9; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066][i % 3], m = G(); m.userData.puff = true; m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); m.visible = false; p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / 9 + (Math.random() - .5) * .06, wob: Math.random() * 6, ox: (Math.random() - .5) * .1, oz: (Math.random() - .5) * .1, sw: .06 + Math.random() * .08, sp: .28 + Math.random() * .08 }); } }
+      for (let i = 0, NP = 20; i < NP; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066, 0x3e4044][i % 4], m = G(); m.userData.puff = true; m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); m.visible = false; p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / NP + (Math.random() - .5) * .04, wob: Math.random() * 6, ox: (Math.random() - .5) * .1, oz: (Math.random() - .5) * .1, sw: .06 + Math.random() * .08, sp: .28 + Math.random() * .08 }); } }
   });
   // Neue Karte: jedes Feld setzt sich Stein für Stein zusammen (von unten nach oben, jeder Stein fällt einzeln von oben ein)
   if (S3.drops.length && matchMedia('(prefers-reduced-motion:reduce)').matches) S3.drops = [];
