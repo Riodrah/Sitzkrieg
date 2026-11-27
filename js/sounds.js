@@ -72,6 +72,7 @@ document.addEventListener('click',e=>{
   if(el.closest('.tabs')) n='menu';
   // Neue Karte: Geräusch vom Klemmbaustein-Bauen
   if(el.id==='gen'||(el.id==='fab'&&!document.body.classList.contains('on-mission'))){ Sounds.buildStart(); return; }
+  if(el.matches('.seg button[data-size]')&&!el.classList.contains('on')){ Sounds.buildStart(); return; }   // Wechsel Normal/Episch: Karte baut sich neu auf
   if(el.id==='fab'||el.id==='army-gen'||el.id==='dp-roll'){ Sounds.play('dice', nextDiceVariant()); return; }
   if(el.id==='rot'){ Sounds.play('chair', nextVariant('chair')); return; }
      // Kampfflieger Ja: Flugzeug fliegt vorbei   // Karte drehen: Stuhlrücken   // dice1.mp3 in einer zufälligen Tonhöhen-Variante
