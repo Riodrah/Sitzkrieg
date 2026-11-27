@@ -73,7 +73,7 @@ const RULES={
   {
    "name": "Rauchgranate",
    "reichweite": "1",
-   "trefferwurf": "0 + Rauch<br>Gr. Scheibe",
+   "trefferwurf": "Rauchmarker",
    "durchschlag": "0"
   },
   {
