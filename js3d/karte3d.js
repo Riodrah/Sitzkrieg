@@ -13,9 +13,26 @@ function flag(g, y = 0) {
   const cloth = new THREE.Mesh(new THREE.PlaneGeometry(.5, .32, 8, 1), new THREE.MeshStandardMaterial({ color: 0xc91a1a, side: THREE.DoubleSide, roughness: .5 })); cloth.position.set(.26, 1.24, 0); f.add(cloth);
   f.userData.cloth = cloth; return f;
 }
+// Stacheldraht-Rolle wie im echten Aufbau: graue Drahtspirale zwischen zwei Kreuzen aus dunkelorangen 1x4-Platten (Noppen nach außen)
+const WIRE_ORANGE = 0x9c5812, WIRE_GREY = 0x9ca1a5;
+export function wireRoll(p, x, z, ry, s = .55) {
+  const u = G(); u.position.set(x, 0, z); u.rotation.y = ry; u.scale.setScalar(s); p.add(u);
+  const CY0 = .37, END = .36;
+  for (const sx of [-1, 1]) {
+    for (const a of [Math.PI / 4, -Math.PI / 4]) brick(u, .8, .08, .2, WIRE_ORANGE, sx * END, CY0, 0, { rot: [a, 0, -sx * HALF], r: .015 });
+    const pin = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, .14, 12), plastic(WIRE_GREY)); pin.rotation.z = HALF; pin.position.set(sx * (END - .03), CY0, 0); u.add(pin);
+  }
+  const R0 = .27, n = 6, ring = new THREE.TorusGeometry(R0, .018, 6, 28), barb = new THREE.BoxGeometry(.03, .07, .03);
+  for (let i = 0; i < n; i++) {
+    const rg = G(); rg.position.set(-END + .1 + i * (2 * END - .2) / (n - 1), R0 + .03, 0); rg.rotation.set(i * .4, 0, .12); u.add(rg);   // leicht schräg = Spirale
+    const m = new THREE.Mesh(ring, plastic(WIRE_GREY)); m.rotation.y = HALF; rg.add(m);
+    for (let k = 0; k < 6; k++) { const a = k / 6 * Math.PI * 2, b = new THREE.Mesh(barb, plastic(WIRE_GREY)); b.position.set(0, Math.cos(a) * R0, Math.sin(a) * R0); b.rotation.x = a; rg.add(b); }
+  }
+  return u;
+}
 function extProp(g, name) {
   const e = G(); e.position.set(-.5, 0, .5); g.add(e);
-  if (/Stachel/.test(name)) { for (let i = 0; i < 3; i++) brick(e, .04, .2, .04, 0x5a4a3a, i * .25, .1, 0, { studs: false }); }
+  if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
   else if (/Auto|Jeep/.test(name)) { brick(e, .6, .2, .32, /Jeep/.test(name) ? 0x5f6b3a : 0x2a3a5a, 0, .2, 0); brick(e, .3, .14, .3, 0x9fd2ea, -.05, .37, 0, { studs: false }); for (const x of [-.2, .2]) for (const z of [-.17, .17]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 14), plastic(0x1b1b1b)); w.rotation.x = HALF; w.position.set(x, .08, z); e.add(w); } }
   else if (/Flugzeug/.test(name)) { brick(e, .7, .18, .2, 0x7a7a72, 0, .1, 0, { rot: [0, .3, .15] }); brick(e, .2, .05, .7, 0x6a6a62, .05, .1, 0, { rot: [0, .3, -.2] }); }
   else if (/Kutsche/.test(name)) { brick(e, .5, .25, .32, 0x6b4a2a, 0, .2, 0); for (const x of [-.2, .2]) { const w = new THREE.Mesh(new THREE.TorusGeometry(.1, .02, 6, 14), plastic(0x3a2a1a)); w.position.set(x, .1, .17); e.add(w); } }
