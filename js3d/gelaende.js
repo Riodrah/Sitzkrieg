@@ -274,14 +274,15 @@ function church2(g, w, d) {
   for (let i = 0; i < 4; i++) box(n, .07, .5, .07, TANW2, -L / 2 + .08 + i * .3, .25, -.1 + W / 2 + .03);       // Strebepfeiler
   // Turm über der Vierung
   const tx = -.05, tz = -.1;
-  mottled(n, .5, 1.7, .5, tx, .85, tz);
-  for (const ry of [0, HALF, Math.PI, -HALF]) { const v = new THREE.Vector3(0, 0, .262).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); for (const o of [-.12, 0, .12]) { const p = new THREE.Vector3(o, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); archWin(n, tx + v.x + p.x, 1.4, tz + v.z + p.z, ry, .26); } }
+  const TS = 1.5;                                                              // Höhe des Turmschafts (vorher 1,7)
+  mottled(n, .5, TS, .5, tx, TS / 2, tz);
+  for (const ry of [0, HALF, Math.PI, -HALF]) { const v = new THREE.Vector3(0, 0, .262).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); for (const o of [-.12, 0, .12]) { const p = new THREE.Vector3(o, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); archWin(n, tx + v.x + p.x, TS - .22, tz + v.z + p.z, ry, .26); } }
   // Turmabschluss nach Foto: Brüstung, Fialen an den Ecken, steiles Satteldach mit zwei hohen Giebeln, Uhr im Giebel, Kreuz mit Glocke
-  box(n, .56, .06, .56, 0xe4dcc4, tx, 1.72, tz);
-  for (const s of [-1, 1]) { box(n, .56, .08, .04, 0xe4dcc4, tx, 1.8, tz + s * .26); box(n, .04, .08, .56, 0xe4dcc4, tx + s * .26, 1.8, tz); }
-  for (const sx of [-.25, .25]) for (const sz of [-.25, .25]) { cyl(n, .035, .12, TANW, tx + sx, 1.82, tz + sz, 0, 0, 10); const pn = new THREE.Mesh(new THREE.ConeGeometry(.04, .16, 10), plastic(0xe4dcc4)); pn.position.set(tx + sx, 1.96, tz + sz); n.add(pn); }
+  box(n, .56, .06, .56, 0xe4dcc4, tx, TS + .02, tz);
+  for (const s of [-1, 1]) { box(n, .56, .08, .04, 0xe4dcc4, tx, TS + .1, tz + s * .26); box(n, .04, .08, .56, 0xe4dcc4, tx + s * .26, TS + .1, tz); }
+  for (const sx of [-.25, .25]) for (const sz of [-.25, .25]) { cyl(n, .035, .12, TANW, tx + sx, TS + .12, tz + sz, 0, 0, 10); const pn = new THREE.Mesh(new THREE.ConeGeometry(.04, .16, 10), plastic(0xe4dcc4)); pn.position.set(tx + sx, TS + .26, tz + sz); n.add(pn); }
   // Satteldach eingerückt zwischen zwei hohen, dicken Giebelwänden (vorn und hinten, ragen über das Dach hinaus)
-  const TH = 1.05, TY = 1.75, TW = .46;
+  const TH = .9, TY = TS + .05, TW = .46;
   for (const sx of [-1, 1]) { const s = slope(n, TW / 2, TH, .42, SLATE, tx + sx * TW / 4, TY + TH / 2, tz, sx > 0 ? 0 : Math.PI); }
   for (const s of [-1, 1]) {
     const sh = new THREE.Shape(); sh.moveTo(-.29, 0); sh.lineTo(.29, 0); sh.lineTo(0, TH + .12); sh.closePath();
