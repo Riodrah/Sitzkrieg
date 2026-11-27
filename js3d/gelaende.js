@@ -1,7 +1,7 @@
 // Gelände-Modelle der Kartenfelder (Klemmbaustein-Stil) – genutzt vom 3D-Spieltisch und von den Rundenende-Bildern
 import { THREE, brick, slope, plastic } from './modelle.js';
 import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
-const TERRAIN = { wald: 0x1a7262, flach: 0x186a56, zug: 0x186a56, farm: 0x9cae5a, turm: 0x7f9a46, bunker: 0x45b35a, strand: 0x1667c8, wohn: 0x8fa357, graben: 0x17765e, hafen: 0x1f5fb0, see: 0x4caa52, strasse: 0x8f8d86, ruine: 0x7f8488, kirche: 0xa3a7a8 };
+const TERRAIN = { wald: 0x1a7262, flach: 0x186a56, zug: 0x186a56, farm: 0x9cae5a, turm: 0x7f9a46, bunker: 0x45b35a, strand: 0x1667c8, wohn: 0x8fa357, graben: 0x17765e, hafen: 0x1f5fb0, see: 0x4caa52, strasse: 0x8f8d86, ruine: 0x7f8488, kirche: 0x7e8488 };
 const R = Math.random;
 
 // ---------- Gelände-Modelle (Mittelpunkt 0,0; Fläche w x d) ----------
@@ -162,21 +162,39 @@ function harbor2(g, w, d) {
   brick(n, L * .96, .18, QD, LG, 0, .09, qz);
   for (let i = 0; i < 16; i++) box(n, .26 + Math.random() * .2, .012, .14 + Math.random() * .12, [0x8f9498, 0xb4b8bb, 0x9aa0a4][i % 3], (Math.random() - .5) * L * .85, .19, qz + (Math.random() - .5) * QD * .8);
   for (let i = 0; i < 6; i++) { const a = new THREE.Mesh(new THREE.CylinderGeometry(.09, .09, .02, 16, 1, false, 0, Math.PI), plastic(0x2a2c2e)); a.rotation.set(HALF, 0, HALF); a.position.set(-L * .4 + i * L * .16, .06, qf + .005); n.add(a); }
-  for (let i = 0; i < 7; i++) { const x = -L * .05 + i * .22; cyl(n, .025, .14, 0x1b1b1b, x, .26, qf - .05); cyl(n, .035, .03, 0x1b1b1b, x, .34, qf - .05); if (i < 6) { const ch = new THREE.Mesh(new THREE.TorusGeometry(.11, .008, 4, 16, Math.PI), plastic(0x1b1b1b)); ch.rotation.set(0, 0, Math.PI); ch.position.set(x + .11, .31, qf - .05); ch.scale.y = .35; n.add(ch); } }
-  for (const bx2 of [L * .12, L * .34]) { box(n, .3, .03, .1, 0x7a4a26, bx2, .29, qz - .18); box(n, .3, .1, .02, 0x7a4a26, bx2, .34, qz - .23); for (const sx of [-.12, .12]) box(n, .03, .1, .08, 0x1b1b1b, bx2 + sx, .23, qz - .18); }   // Bänke
-  for (const lx of [L * .02, L * .44]) { cyl(n, .02, .7, 0x1b1b1b, lx, .53, qz - .26); box(n, .12, .03, .03, 0x1b1b1b, lx + .05, .88, qz - .26); cyl(n, .035, .06, 0xfff2b0, lx + .1, .84, qz - .26); }   // Laternen
-  for (const [x, y] of [[L * .26, .26], [L * .3, .26], [L * .28, .4]]) brick(n, .14, .14, .14, 0x8a5a32, x, y, qz + .12, { studs: true });   // Kisten
-  for (let i = 0; i < 3; i++) cyl(n, .06, .13, OLIVE, -L * .02 + i * .13, .25, qz + .18, 0, 0, 14);
-  // Roter Portalkran auf dem Kai, Ausleger rot-weiß über das Wasser
-  const cx = -L * .3;
-  for (const sx of [-.32, .32]) { box(n, .14, 1.35, .14, 0xc4201c, cx + sx, .85, qz); box(n, .2, .1, .3, 0xc4201c, cx + sx, .22, qz); }
-  box(n, .78, .14, .16, 0xc4201c, cx, 1.55, qz);
-  for (let i = 0; i < 9; i++) box(n, .16, .14, .14, i % 2 ? WHT2 : 0xc4201c, cx, 1.68, qz - .2 + i * .14);
-  for (const sx of [-.07, .07]) { const l = cyl(n, .035, .03, 0xf2a01e, cx + sx, 1.77, qz - .2 + 8 * .14); }
-  cyl(n, .012, .45, 0x1b1b1b, cx, 1.38, qf + .1);
-  const ct = G(); ct.position.set(cx, .82, qf + .1); n.add(ct);                     // Container (Rahmen) mit Geschütz
-  box(ct, .56, .05, .42, 0xd8892a, 0, .3, 0); box(ct, .56, .05, .42, 0xd8892a, 0, -.04, 0);
-  for (const sx of [-.26, .26]) for (const sz of [-.19, .19]) box(ct, .04, .32, .04, 0xd8892a, sx, .13, sz);
+  for (let i = 0; i < 7; i++) { const x = -L * .48 + i * .2; cyl(n, .025, .14, 0x1b1b1b, x, .26, qf - .05); cyl(n, .035, .03, 0x1b1b1b, x, .34, qf - .05); if (i < 6) { const ch = new THREE.Mesh(new THREE.TorusGeometry(.11, .008, 4, 16, Math.PI), plastic(0x1b1b1b)); ch.rotation.set(0, 0, Math.PI); ch.position.set(x + .11, .31, qf - .05); ch.scale.y = .35; n.add(ch); } }
+  // Kai-Ausstattung wie im echten Aufbau: schwarze Bodenmarkierungen, Rettungsring, blaue Tafel, grauer Lampenmast
+  for (const [x, z, a, b] of [[-L * .02, qz - .1, .36, .06], [-L * .02 - .15, qz + .02, .06, .3], [L * .2, qz + .1, .3, .06], [L * .2 + .12, qz - .02, .06, .26], [L * .34, qz - .2, .22, .06]]) box(n, a, .012, b, 0x1b1b1b, x, .19, z);
+  const buoy = new THREE.Mesh(new THREE.TorusGeometry(.06, .022, 8, 18), plastic(0xf2a01e)); buoy.rotation.x = HALF; buoy.position.set(L * .3, .2, qz + .2); n.add(buoy);
+  box(n, .2, .02, .12, 0x2a5ac8, L * .38, .2, qz + .16, 0, .4, 0); box(n, .12, .021, .05, 0xe8e030, L * .38, .205, qz + .16, 0, .4, 0);   // blaue Tafel
+  cyl(n, .05, .04, DGY, L * .46, .2, qz - .26); cyl(n, .02, .3, LG, L * .46, .36, qz - .26); box(n, .1, .05, .06, LG, L * .46, .53, qz - .26);   // Lampenmast
+  // L-förmiger Anleger mit Kettenzaun am Heckende (neben dem Schiff)
+  const ax = -L * .44; brick(n, L * .08, .18, D * .5, LG, ax, .09, qf + D * .25 - .02);
+  for (let i = 0; i < 4; i++) { const z = qf + .08 + i * .2; cyl(n, .025, .14, 0x1b1b1b, ax + L * .035, .26, z); cyl(n, .035, .03, 0x1b1b1b, ax + L * .035, .34, z); if (i < 3) { const ch = new THREE.Mesh(new THREE.TorusGeometry(.1, .008, 4, 16, Math.PI), plastic(0x1b1b1b)); ch.rotation.set(0, HALF, Math.PI); ch.position.set(ax + L * .035, .31, z + .1); ch.scale.y = .35; n.add(ch); } }
+  // Roter Portalkran (nach Foto): vier hohe Stützen auf dem Kai, weißer Rahmen mit roten Streifen über dem Schiff,
+  // rote Abspannstangen, schwarze Laufkatze mit Winde, hängender oranger Container mit Geschütz
+  const RED2 = 0xc4201c, cx = L * .08, zf = D / 2 - .06, zb = -D / 2 + .08, YB = 1.62;
+  for (const sx of [-.4, .4]) for (const sz of [qz - .24, qz + .24]) {
+    box(n, .13, YB - .2, .13, RED2, cx + sx, .18 + (YB - .2) / 2, sz);
+    box(n, .2, .1, .2, LG, cx + sx, .23, sz);                                                     // Fuß
+    for (let i = 0; i < 4; i++) box(n, .135, .05, .135, i % 2 ? WHT2 : RED2, cx + sx, .55 + i * .05, sz);   // Warnstreifen
+  }
+  for (const sx of [-.4, .4]) { box(n, .12, .12, .6, RED2, cx + sx, YB - .12, qz); box(n, .1, .45, .1, RED2, cx + sx, YB + .25, qz); cyl(n, .05, .1, WHT2, cx + sx, YB + .5, qz, 0, HALF, 12); }   // Querträger + Mast
+  for (const sx of [-.32, .32]) { const len = zf - zb; for (let i = 0; i < 10; i++) box(n, .1, .12, len / 10 + .002, (i === 1 || i === 8) ? RED2 : WHT2, cx + sx, YB, zb + (i + .5) * len / 10); box(n, .102, .04, len, RED2, cx + sx, YB - .05, (zb + zf) / 2); }   // Rahmenlängsträger
+  for (const z of [zb, zf, qz]) box(n, .74, .1, .1, z === qz ? RED2 : WHT2, cx, YB, z);                                                   // Querriegel
+  for (const sx of [-.32, .32]) cyl(n, .035, .04, 0xf2a01e, cx + sx, YB + .03, zf + .06, HALF);                                         // Warnleuchten
+  for (const sx of [-.4, .4]) for (const [zt, yt] of [[zf - .05, YB + .05], [zb + .05, YB + .05]]) {                                    // Abspannstangen
+    const a = new THREE.Vector3(cx + sx, YB + .5, qz), b = new THREE.Vector3(cx + sx * .8, yt, zt), m = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, a.distanceTo(b), 8), plastic(RED2));
+    m.position.copy(a).add(b).multiplyScalar(.5); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); n.add(m);
+  }
+  const cz = D / 2 - .36;                                                                         // über dem Schiff
+  box(n, .7, .1, .32, 0x1b1b1b, cx, YB - .1, cz); for (const sx of [-.2, .2]) box(n, .08, .02, .3, 0xf2d23a, cx + sx, YB - .04, cz);   // Laufkatze
+  cyl(n, .07, .3, LG, cx, YB + .04, cz, HALF); for (let i = 0; i < 5; i++) cyl(n, .08, .02, 0x8a8f94, cx - .12 + i * .06, YB + .04, cz, 0, HALF, 14);   // Seilwinde
+  for (const sx of [-.15, .15]) cyl(n, .008, .5, 0x1b1b1b, cx + sx, YB - .4, cz);
+  const ct = G(); ct.position.set(cx, .95, cz); n.add(ct);                                         // Container mit Geschütz
+  brick(ct, .6, .05, .44, 0x7a4a26, 0, .3, 0); box(ct, .6, .05, .44, 0xd8892a, 0, -.04, 0);
+  for (const sx of [-.28, .28]) for (const sz of [-.2, .2]) box(ct, .04, .32, .04, 0xd8892a, sx, .13, sz);
+  for (let i = 0; i < 4; i++) box(ct, .015, .28, .015, 0xd8892a, -.18 + i * .12, .13, .21);
   cargoGun(ct, 0, -.01, 0, 0, .8);
   // Frachter
   const sh = G(); sh.position.set(.05, .04, D / 2 - .36); sh.scale.set(.92, .9, .78); n.add(sh); const SL = L * .82;
@@ -244,7 +262,7 @@ function gable(g, L, W, H, x, y, z, ry = 0, rc = SLATE, wc = TANW) {   // Sattel
 function archWin(g, x, y, z, ry, h = .3) { const n = G(); n.position.set(x, y, z); n.rotation.y = ry; g.add(n); box(n, .14, h, .015, 0x2a2c30, 0, 0, 0); const t = new THREE.Mesh(new THREE.CylinderGeometry(.07, .07, .015, 16, 1, false, 0, Math.PI), plastic(0x2a2c30)); t.rotation.set(HALF, 0, HALF); t.position.y = h / 2; n.add(t); }
 function church2(g, w, d) {
   const along = w > d, n = G(); if (!along) n.rotation.y = HALF; g.add(n); const L = Math.max(w, d) * .78;
-  for (let i = 0; i < 14; i++) box(n, .14 + Math.random() * .2, .01, .08 + Math.random() * .1, [0x7e8488, 0xb8bcbf][i % 2], (Math.random() - .5) * w * .9, .005, (Math.random() - .5) * 1.3);
+  for (let i = 0; i < 22; i++) box(n, .14 + Math.random() * .24, .01, .08 + Math.random() * .14, [0x4e5458, 0x7e8488, 0xb8bcbf][i % 3], (Math.random() - .5) * w * .9, .005, (Math.random() - .5) * 1.3);   // Pflaster: dunkel- und hellgraue Platten
   const H = .7, W = .78;
   mottled(n, L, H, W, 0, H / 2, -.1);                                             // Langhaus
   gable(n, L, W, .48, 0, H, -.1);
@@ -258,10 +276,24 @@ function church2(g, w, d) {
   const tx = -.05, tz = -.1;
   mottled(n, .5, 1.7, .5, tx, .85, tz);
   for (const ry of [0, HALF, Math.PI, -HALF]) { const v = new THREE.Vector3(0, 0, .262).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); for (const o of [-.12, 0, .12]) { const p = new THREE.Vector3(o, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry); archWin(n, tx + v.x + p.x, 1.4, tz + v.z + p.z, ry, .26); } }
-  const clk = cyl(n, .1, .02, 0xf6f4ee, tx, 1.12, tz + .262, HALF, 0, 24); box(n, .012, .07, .005, 0x1b1b1b, tx, 1.14, tz + .275); box(n, .05, .01, .005, 0x1b1b1b, tx + .02, 1.12, tz + .275);
-  box(n, .56, .06, .56, 0xc8ccce, tx, 1.72, tz);
-  const sp = new THREE.Mesh(new THREE.ConeGeometry(.38, .9, 4), plastic(SLATE)); sp.position.set(tx, 2.2, tz); sp.rotation.y = Math.PI / 4; n.add(sp);
-  for (const sx of [-.24, .24]) for (const sz of [-.24, .24]) { const pn = new THREE.Mesh(new THREE.ConeGeometry(.05, .22, 4), plastic(0xc8ccce)); pn.position.set(tx + sx, 1.86, tz + sz); n.add(pn); }
+  // Turmabschluss nach Foto: Brüstung, Fialen an den Ecken, steiles Satteldach mit zwei hohen Giebeln, Uhr im Giebel, Kreuz mit Glocke
+  box(n, .56, .06, .56, 0xe4dcc4, tx, 1.72, tz);
+  for (const s of [-1, 1]) { box(n, .56, .08, .04, 0xe4dcc4, tx, 1.8, tz + s * .26); box(n, .04, .08, .56, 0xe4dcc4, tx + s * .26, 1.8, tz); }
+  for (const sx of [-.25, .25]) for (const sz of [-.25, .25]) { cyl(n, .035, .12, TANW, tx + sx, 1.82, tz + sz, 0, 0, 10); const pn = new THREE.Mesh(new THREE.ConeGeometry(.04, .16, 10), plastic(0xe4dcc4)); pn.position.set(tx + sx, 1.96, tz + sz); n.add(pn); }
+  // Satteldach eingerückt zwischen zwei hohen, dicken Giebelwänden (vorn und hinten, ragen über das Dach hinaus)
+  const TH = 1.05, TY = 1.75, TW = .46;
+  for (const sx of [-1, 1]) { const s = slope(n, TW / 2, TH, .42, SLATE, tx + sx * TW / 4, TY + TH / 2, tz, sx > 0 ? 0 : Math.PI); }
+  for (const s of [-1, 1]) {
+    const sh = new THREE.Shape(); sh.moveTo(-.29, 0); sh.lineTo(.29, 0); sh.lineTo(0, TH + .12); sh.closePath();
+    const m = new THREE.Mesh(new THREE.ExtrudeGeometry(sh, { depth: .07, bevelEnabled: false }), plastic(TANW)); m.position.set(tx, TY, tz + s * .22 - (s > 0 ? 0 : .07)); m.castShadow = true; n.add(m);
+    for (const k of [-1, 1]) box(n, .055, (TH + .12) * 1.03, .075, 0xe4dcc4, tx + k * .145, TY + (TH + .12) / 2, tz + s * .255, 0, 0, k * .26);   // helle Kanten
+    for (let i = 0; i < 5; i++) box(n, .08 + Math.random() * .06, .05, .012, [0xd2d5d6, 0xe4dcc4][i % 2], tx + (Math.random() - .5) * .25, TY + .1 + Math.random() * .5, tz + s * .296);   // gemischte Steine
+  }
+  const clk = cyl(n, .095, .02, 0xf6f4ee, tx, TY + .42, tz + .3, HALF, 0, 24); cyl(n, .103, .012, 0x1b1b1b, tx, TY + .42, tz + .292, HALF, 0, 24);   // Uhr im vorderen Giebel
+  box(n, .012, .07, .005, 0x1b1b1b, tx, TY + .44, tz + .312); box(n, .05, .01, .005, 0x1b1b1b, tx + .02, TY + .42, tz + .312);
+  cyl(n, .02, .16, LG, tx, TY + TH + .2, tz); box(n, .02, .02, .12, LG, tx, TY + TH + .24, tz); cyl(n, .04, .06, LG, tx, TY + TH + .13, tz);   // Kreuz mit Glocke
+  // beschädigtes Dach: orange Loch im Langhausdach
+  box(n, .14, .02, .12, 0xd8892a, -L * .22, .95, .12, .83, 0, 0);
   for (const lx of [-L * .55, L * .45]) { cyl(n, .02, .75, 0x1b1b1b, lx, .38, .62); box(n, .14, .03, .03, 0x1b1b1b, lx + .06, .76, .62); cyl(n, .035, .06, 0xfff2b0, lx + .12, .72, .62); }
 }
 
