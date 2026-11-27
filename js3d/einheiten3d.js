@@ -169,7 +169,7 @@ function stepDebris(v, dt) {
   }
 }
 // Zeitpunkt des Treffers je Einheit (Sekunden nach Start der Aktion)
-const HIT_T = { rif: .55, sniper: .72, shotgun: .45, mg: .55, general: .45, flame: .85, pzf: .68, grenade: 1.08, mortar: 1.5, schwer: .9, leicht: .9, art: .55, trans: 1.35, krad: 1.15, flieger: 1.65 };
+const HIT_T = { rif: .55, sniper: .72, shotgun: .45, mg: .55, general: .45, flame: .85, grenade: 1.08, mortar: 1.5, schwer: .9, leicht: .9, art: .55, trans: 1.35, krad: 1.15, flieger: 1.65 };
 
 // ---------- Aktionen je Einheit ----------
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -185,6 +185,21 @@ const onSpiel = () => { const t = document.getElementById('tab-spiel'); return !
 window.onSpiel = onSpiel;
 const snd = (n, rate = 1) => { if (!onSpiel()) return; try { if (typeof Sounds !== 'undefined') Sounds.play(n, rate); } catch (e) { } };
 let FCTX = null;
+// Kleiner metallischer Reparaturklang: Schlüssel trifft Stahl (kurzer Anschlag + nachklingende, unharmonische Obertöne)
+function clank(pitch = 1) {
+  if (!onSpiel()) return;
+  try {
+    const vol = typeof MASTER_VOL !== 'undefined' ? MASTER_VOL : .8; if (vol <= 0) return;
+    FCTX = FCTX || new (window.AudioContext || window.webkitAudioContext)(); const c = FCTX; if (c.state === 'suspended') c.resume();
+    const t = c.currentTime, out = c.createGain(); out.gain.value = .32 * vol; out.connect(c.destination);
+    for (const [f, a, d] of [[1240, .5, .35], [1870, .35, .25], [2930, .25, .18], [4150, .15, .1]]) {
+      const o = c.createOscillator(), g = c.createGain(); o.type = 'sine'; o.frequency.value = f * pitch;
+      g.gain.setValueAtTime(a, t); g.gain.exponentialRampToValueAtTime(.001, t + d); o.connect(g).connect(out); o.start(t); o.stop(t + d + .02);
+    }
+    const len = Math.ceil(c.sampleRate * .03), b = c.createBuffer(1, len, c.sampleRate), dd = b.getChannelData(0); for (let i = 0; i < len; i++) dd[i] = (Math.random() * 2 - 1) * (1 - i / len);
+    const n = c.createBufferSource(), hp = c.createBiquadFilter(); n.buffer = b; hp.type = 'highpass'; hp.frequency.value = 2500; const ng = c.createGain(); ng.gain.value = .6; n.connect(hp).connect(ng).connect(out); n.start(t);
+  } catch (e) { }
+}
 function flameSound(dur = 1.1) {
   if (!onSpiel()) return;
   try {
@@ -222,7 +237,20 @@ function act(v) {
     case 'general-veteran': shots(d.weapon, 9, .09, { cas: true, rec: .03 }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
     case 'general': shots(d.weapon, 2, .35, { d: .3, snd: 'pistole' }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
     case 'flame': if (v.tKind) fx.at(.45, () => ignite(v)); fx.at(.25, () => flameSound(1.1)); for (let i = 0; i < 26; i++) fx.at(.25 + i * .035, () => { const { p, dir } = muzzleOf(d.weapon); fx.fire(p, dir, 1); if (i % 5 === 0) fx.flash(p, 3); }); fx.at(1.2, () => fx.smoke(ground(d.weapon, 1.6).setY(.4), 1, 4, 0x3a3630)); break;
-    case 'pzf': fx.at(.35, () => { snd('abschuss', .8); const { p, dir } = muzzleOf(d.weapon); fx.muzzle(p, dir, 1.4); const back = d.weapon.localToWorld(d.weapon.userData.back.clone()); fx.smoke(back, 1.2, 6, 0xb0aaa0); fx.tracer(p, dir, 3.5, 12); fx.at(.3, () => { fx.explosion(hit.clone(), .8); snd('explosion'); }); }); break;
+    case 'pzf': fx.at(.35, () => { snd('abschuss', .8); const { p, dir } = muzzleOf(d.weapon); fx.muzzle(p, dir, 1.4); const back = d.weapon.localToWorld(d.weapon.userData.back.clone()); fx.smoke(back, 1.2, 6, 0xb0aaa0);
+        // große Rakete: olivgrüner Gefechtskopf mit Spitze, Stiel und Leitflossen, fliegt mit Feuer- und Rauchschweif ins Ziel
+        const rk = new THREE.Group(), olive = plastic(0x5a6338), dark = plastic(0x2a2c22);
+        const hd = new THREE.Mesh(new THREE.SphereGeometry(.13, 18, 12), olive); hd.scale.set(1, 1, 1.5); hd.position.z = .1; rk.add(hd);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(.08, .16, 16), olive); tip.rotation.x = HALF; tip.position.z = .3; rk.add(tip);
+        const st = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .32, 10), dark); st.rotation.x = HALF; st.position.z = -.16; rk.add(st);
+        for (let i = 0; i < 4; i++) { const fn = new THREE.Mesh(new THREE.BoxGeometry(.006, .1, .12), dark); fn.position.set(0, 0, -.28); fn.rotation.z = i * HALF; fn.translateY(.05); rk.add(fn); }
+        rk.scale.setScalar(2.2);
+        const end = hit.clone().setY(Math.max(.3, hit.y)), from = p.clone(); rk.position.copy(from); rk.lookAt(end); v.scene.add(rk);
+        const t = { k: 0 }, dur = Math.max(.5, from.distanceTo(end) / 4);
+        const done = () => { v.scene.remove(rk); fx.explosion(end, 1.1); snd('explosion'); if (v.tKind) breakApart(v, v.tKind === 'tank' ? 1.3 : 1); };   // Ziel zerfällt erst beim Einschlag
+        if (gs) gs.to(t, { k: 1, duration: dur, ease: 'none', onUpdate: () => { rk.position.lerpVectors(from, end, t.k); rk.position.y += Math.sin(t.k * Math.PI) * .12; rk.rotateZ(.25);
+          const tail = rk.localToWorld(new THREE.Vector3(0, 0, -.42)); fx.fire(tail, dir.clone().negate(), 1.1); if (Math.random() < .5) fx.smoke(tail, .5, 1, 0x9a958a); }, onComplete: done });
+        else done(); }); break;
     case 'grenade': if (gs) { gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x - .4 }, { x: d.armR.rotation.x + 1.6, duration: .25, delay: .2, ease: 'power3.in', yoyo: true, repeat: 1 }); }
       fx.at(.45, () => { const g = d.grenade; const p0 = g.getWorldPosition(new THREE.Vector3()); g.visible = false; const t = { k: 0 }; const end = hit.clone(); const ghost = g.clone(); ghost.visible = true; v.scene.add(ghost);
         ghost.scale.copy(g.getWorldScale(new THREE.Vector3())); ghost.rotation.set(0, 0, 0);   // aufrecht starten (nicht schräg wie in der Hand); im Flug ruhig senkrecht überkippen in Wurfrichtung
@@ -246,7 +274,8 @@ function act(v) {
       }));
       break;
     }
-    case 'mech': if (gs) gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x }, { x: d.armR.rotation.x + .9, duration: .14, yoyo: true, repeat: 5, ease: 'power2.in' }); for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => { const p = d.tool.getWorldPosition(new THREE.Vector3()); for (let k = 0; k < 8; k++) fx.spawn({ p, v: V((Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3), life: .4, s0: .06, s1: .02, c0: 0xffe090, c1: 0xff7020, g: -9 }); fx.flash(p, 1.5); }); break;
+    case 'mech': for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => clank(1 + (i % 2) * .12));   // metallisches Klopfen beim Reparieren
+      if (gs) gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x }, { x: d.armR.rotation.x + .9, duration: .14, yoyo: true, repeat: 5, ease: 'power2.in' }); for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => { const p = d.tool.getWorldPosition(new THREE.Vector3()); for (let k = 0; k < 8; k++) fx.spawn({ p, v: V((Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3), life: .4, s0: .06, s1: .02, c0: 0xffe090, c1: 0xff7020, g: -9 }); fx.flash(p, 1.5); }); break;
     case 'medic': {   // verwundeten Kameraden heilen: der steht auf, springt zweimal und rennt rechts raus
       if (v.patient) v.stage.remove(v.patient);
       const ax = new THREE.Box3().setFromObject(v.root).max.x, pt = buildUnit('rif', v.side); v.patient = pt; v.stage.add(pt);
