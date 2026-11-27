@@ -322,14 +322,14 @@ function soldier(side, kind = 'rif', opt = {}) {
     }
     case 'medic': {
       u.armR = arm(body, 1, ARM, -1.9); u.armL = arm(body, -1, ARM, -.25);
-      const s = G(); P(s, CY(.03, .03, .16, 12), 0xdfe9ee); P(s, CY(.006, .006, .08, 6), DGR, 0, .12, 0); u.armR.userData.hand.add(s);
+      const s = G(); P(s, CY(.03, .03, .16, 12), 0xdfe9ee); P(s, CY(.006, .006, .08, 6), DGR, 0, .12, 0); s.scale.setScalar(3); u.armR.userData.hand.add(s);   // Verbandsrolle, dreifach groß
       // roter Sanitätskoffer mit weißem Plus, hängt am Griff in der anderen Hand
       g.updateMatrixWorld(true); const hl = u.armL.userData.hand, hp = hl.localToWorld((hl.userData.clip || new THREE.Vector3(0, -.1, 0)).clone()); body.worldToLocal(hp);
       const kit = G(); kit.position.set(hp.x, hp.y - .02, hp.z); body.add(kit);
       P(kit, RB(.1, .19, .27, .02), 0xc0141a, 0, -.12, 0);                                    // Koffer
       P(kit, RB(.03, .05, .1, .01), 0x1b1b1b, 0, .0, 0);                                      // Griff
       for (const sx of [-1, 1]) { P(kit, RB(.006, .12, .035, .002), WHT, sx * .052, -.12, 0); P(kit, RB(.006, .035, .12, .002), WHT, sx * .052, -.12, 0); }   // weißes Plus auf beiden Seiten
-      if (body.userData.glb) kit.scale.setScalar(1.2); hl.attach(kit); u.kit = kit; break;
+      kit.scale.setScalar((body.userData.glb ? 1.2 : 1) * 3); hl.attach(kit);   // Koffer dreifach groß u.kit = kit; break;
     }
     case 'general': {
       if (opt.veteran) { hold(mgun(), .04, .8, .24, -.05); u.armL = arm(body, -1, ARM, -1.2, .2); u.armR = arm(body, 1, ARM, -.75); break; }
@@ -552,37 +552,55 @@ function tankDetails(hull, tur, br, side, heavy, L, Wd, r, hy, c, u) {
 // Kotflügel über den Vorderrädern, schräge Windschutzscheibe, drei schwarze Sitzbänke, Kasten mit Gepäckgitter hinten, Speichen-Laufrollen
 function halftrack(side) {
   const g = G(), u = g.userData, b = G(); g.add(b); u.body = b;
-  const S = side === 'de' ? 0xc9b781 : COL[side].veh, S2 = side === 'de' ? 0xb3a26c : COL[side].veh2;
+  const S = side === 'de' ? 0xc9b781 : COL[side].veh, S2 = side === 'de' ? 0xb3a26c : COL[side].veh2, K = 0x161616, VENT = 0x2e2a1e;
   for (const s of [-1, 1]) {
     trackUnit(b, 2.1, s * .68, .2, 4, side).position.x = -.5;
     for (let i = 0; i < 4; i++) { const wx = -1.3 + i * .48, wz = s * (.84 + (i % 2) * .06), wg = G(); wg.position.set(wx, .26, wz); b.add(wg);   // versetzte Laufrollen mit Speichen
       P(wg, CY(.22, .22, .06, 24), S, 0, 0, 0, HALF, 0, 0); P(wg, CY(.06, .06, .08, 12), S2, 0, 0, 0, HALF, 0, 0);
       for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P(wg, RB(.025, .14, .02, .005), S2, Math.cos(a) * .1, Math.sin(a) * .1, s * .035, 0, 0, a + HALF); } }
-    P(b, CY(.2, .2, .1, 12), S, .45, .3, s * .78, HALF, 0, 0);                                        // Antriebsrad
-    brickTire(b, .3, .18, 1.35, .3, s * .7); fender(b, .32, .22, 1.35, .3, s * .7, S, 1.15);         // Vorderrad + Kotflügel
+    const sp = G(); sp.position.set(.45, .3, s * .8); b.add(sp); P(sp, CY(.2, .2, .08, 20), S, 0, 0, 0, HALF, 0, 0);   // Antriebsrad mit Zähnen
+    for (let k = 0; k < 12; k++) { const a = k / 12 * Math.PI * 2; P(sp, RB(.05, .05, .08, .01), S, Math.cos(a) * .21, Math.sin(a) * .21, 0, 0, 0, a); }
+    for (let k = 0; k < 5; k++) { const a = k / 5 * Math.PI * 2; P(sp, CY(.025, .025, .09, 10), S2, Math.cos(a) * .1, Math.sin(a) * .1, 0, HALF, 0, 0); }
+    // Vorderrad: schwarzer Reifen, sandfarbene Speichenfelge, großer geschwungener Kotflügel
+    const fw = G(); fw.position.set(1.35, .3, s * .62); b.add(fw);
+    P(fw, cached('htire', () => new THREE.TorusGeometry(.22, .085, 14, 30)), K);
+    P(fw, CY(.16, .16, .1, 24), S, 0, 0, 0, HALF, 0, 0); P(fw, CY(.05, .05, .12, 12), S2, 0, 0, 0, HALF, 0, 0);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P(fw, RB(.025, .13, .02, .005), S2, Math.cos(a) * .08, Math.sin(a) * .08, s * .055, 0, 0, a + HALF); }
+    fender(b, .33, .26, 1.35, .3, s * .62, S, 1.25);
     fender(b, .26, .2, -1.55, .3, s * .7, S, .6).rotation.z = .7;                                    // Heckschürze
   }
   brick(b, 3.3, .16, 1.36, S, -.05, .56, 0, { studs: false });                                     // Wanne
-  brick(b, .95, .42, 1.0, S, 1.25, .85, 0, { studs: false });                                      // Motorhaube
-  slope(b, .4, .2, 1.0, S, 1.55, 1.16, 0, Math.PI); brick(b, .55, .1, 1.0, S, 1.08, 1.11, 0, { studs: false });
-  for (const s of [-1, 1]) for (let i = 0; i < 12; i++) P(b, RB(.018, .26, .01, .004), 0x3a3424, .95 + i * .05, .84, s * .505);   // Lüftungsschlitze
-  brick(b, .06, .3, .9, S2, 1.74, .78, 0, { studs: false });                                       // Kühlerfront
-  for (const s of [-1, 1]) P(b, CY(.07, .07, .06, 16), 0xfff2b0, 1.76, .98, s * .38, 0, 0, HALF);   // Scheinwerfer
-  const glass = new THREE.MeshPhysicalMaterial({ color: 0xdfeef2, roughness: .05, transmission: .7, transparent: true, opacity: .45, clearcoat: 1 });
-  P(b, RB(.03, .52, 1.0, .01), glass, .66, 1.3, 0, 0, 0, .25);                                     // Windschutzscheibe
-  for (const s of [-1, 1]) P(b, RB(.05, .55, .05, .01), S2, .66, 1.3, s * .5, 0, 0, .25);
-  for (const s of [-1, 1]) brick(b, 2.0, .14, .12, S, -.45, .7, s * .62);                          // Seitenleisten mit Noppen
-  for (const x of [.3, -.25, -.8]) {                                                                // drei schwarze Sitzbänke
-    brick(b, .3, .1, 1.0, 0x1b1b1b, x, .7, 0, { studs: false }); brick(b, .07, .26, 1.0, 0x1b1b1b, x - .15, .85, 0, { studs: false });
-    for (const s of [-1, 1]) brick(b, .3, .22, .14, S, x, .8, s * .58, { studs: false });
-  }
-  brick(b, .6, .5, 1.36, S, -1.4, .89, 0, { studs: false });                                       // Kasten hinten
-  brick(b, .56, .05, 1.3, S2, -1.4, 1.16, 0, { studs: false });
-  for (const [dx, dz, w, d] of [[0, .6, .56, .05], [0, -.6, .56, .05], [.26, 0, .05, 1.2], [-.26, 0, .05, 1.2]]) brick(b, w, .07, d, S, -1.4 + dx, 1.22, dz, { studs: false });   // Gepäckgitter
-  for (let i = 0; i < 5; i++) for (const s of [-1, 1]) P(b, CY(.015, .015, .07, 6), S, -1.62 + i * .11, 1.27, s * .6);
-  const w = mgun(); w.scale.setScalar(.8); w.position.set(-1.25, 1.42, 0); w.rotation.y = HALF; b.add(w); u.weapon = w;
-  for (let i = 0; i < 3; i++) { const f = soldier(side, 'rif'); f.remove(f.userData.shadow); f.scale.setScalar(.55); f.position.set(.3 - i * .55, .6, i % 2 ? -.25 : .25); f.rotation.y = HALF; f.userData.weapon.visible = false; b.add(f); }
-  insignia(b, side, .34, -1.4, .9, .685);
+  for (const s of [-1, 1]) brick(b, .6, .05, .26, S, .9, .5, s * .62, { studs: false });            // Trittbrett zwischen Kotflügel und Kette
+  // Lange Motorhaube: Unterteil, abgeschrägte Oberkante, schmalere Nase vorn
+  brick(b, 1.0, .3, .96, S, 1.12, .79, 0, { studs: false });
+  brick(b, 1.0, .1, .62, S, 1.12, .99, 0, { studs: false });
+  for (const s of [-1, 1]) slope(b, .17, .1, 1.0, S, 1.12, .99, s * .395, s > 0 ? -HALF : HALF);    // schräge Haubenkanten
+  slope(b, .22, .14, .62, S, 1.73, .97, 0, Math.PI); brick(b, .14, .3, .7, S, 1.7, .79, 0, { studs: false });   // Nase
+  for (const s of [-1, 1]) for (let i = 0; i < 20; i++) P(b, RB(.016, .2, .012, .004), VENT, .85 + i * .028, .79, s * .482);   // Lüftungsschlitze seitlich
+  for (let i = 0; i < 6; i++) P(b, RB(.012, .2, .05, .004), VENT, 1.775, .78, -.2 + i * .08);      // Kühlergrill
+  for (const s of [-1, 1]) { P(b, CY(.06, .06, .05, 16), S, 1.62, .98, s * .44, 0, 0, HALF); P(b, CY(.045, .045, .052, 16), 0xf2efe0, 1.645, .98, s * .44, 0, 0, HALF); }   // Scheinwerfer
+  P(b, CY(.03, .03, .06, 10), S, 1.83, .68, .2, 0, 0, HALF);                                       // Abschleppöse
+  // Senkrechte Windschutzscheibe mit Rahmen und Teilung
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xe8e2c8, roughness: .05, transmission: .6, transparent: true, opacity: .4, clearcoat: 1 });
+  P(b, RB(.03, .5, .96, .01), glass, .6, 1.24, 0, 0, 0, .06);
+  for (const s of [-1, 1]) P(b, RB(.045, .55, .04, .01), S2, .6, 1.24, s * .48, 0, 0, .06);
+  P(b, RB(.045, .04, .98, .01), S2, .615, 1.5, 0); P(b, RB(.04, .5, .03, .008), S2, .6, 1.24, 0, 0, 0, .06);
+  P(b, TO(.08, .015), K, .42, .98, .22, 0, HALF, -.6);                                              // Lenkrad
+  // Seitenwände aus Steinen, dazwischen schwarze Sitze mit sandfarbenen Armlehnen
+  for (const s of [-1, 1]) { brick(b, 2.0, .14, .12, S, -.45, .7, s * .62, { studs: false }); for (let i = 0; i < 8; i++) brick(b, .24, .07, .12, i % 2 ? S : S2, -1.32 + i * .25, .8, s * .62, { studs: false }); }
+  const seat = (x, z, w) => { brick(b, .3, .1, w, K, x, .7, z, { studs: false, r: .03 }); brick(b, .08, .28, w, K, x - .15, .86, z, { studs: false, r: .03 }); };
+  seat(.25, -.25, .36); seat(.25, .25, .36); brick(b, .26, .2, .12, S, .22, .82, 0, { studs: false });   // zwei Vordersitze, Mittellehne
+  seat(-.35, 0, 1.0); seat(-.9, 0, 1.0);                                                            // zwei Sitzbänke
+  for (const x of [.22, -.38, -.93]) for (const s of [-1, 1]) brick(b, .26, .24, .14, S, x, .84, s * .56, { studs: false });   // Armlehnen
+  // Heckkasten mit Gepäckgitter aus kleinen Stäben, Klappen seitlich
+  brick(b, .62, .5, 1.36, S, -1.42, .89, 0, { studs: false });
+  brick(b, .58, .05, 1.28, S2, -1.42, 1.165, 0, { studs: false });
+  for (const [dx, dz, w2, d2] of [[0, .6, .6, .06], [0, -.6, .6, .06], [.28, 0, .06, 1.2], [-.28, 0, .06, 1.2]]) brick(b, w2, .06, d2, S, -1.42 + dx, 1.22, dz, { studs: false });
+  for (let i = 0; i < 6; i++) for (const s of [-1, 1]) P(b, CY(.016, .016, .08, 6), S, -1.67 + i * .1, 1.28, s * .6);
+  for (let i = 0; i < 11; i++) for (const s of [-1, 1]) P(b, CY(.016, .016, .08, 6), S, -1.42 + s * .28, 1.28, -.55 + i * .11);
+  for (const s of [-1, 1]) { P(b, RB(.22, .2, .02, .01), S2, -1.3, .9, s * .685); P(b, TO(.04, .008, Math.PI), VENT, -1.25, .9, s * .69); }   // Klappen mit Griff
+  // Kleines MG an der Scheibe (für die Schussanimation im Spiel)
+  const w = mgun(); w.scale.setScalar(.55); w.position.set(.66, 1.56, .34); w.rotation.y = HALF; b.add(w); u.weapon = w;
   shadow(g, 1.7); u.type = 'veh'; u.exhaust = new THREE.Vector3(-1.7, .6, -.6);
   return g;
 }

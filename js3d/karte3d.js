@@ -187,15 +187,32 @@ export function renegades(g) {
   const b = G(); b.position.set(.4, 0, .12); b.rotation.y = -.35; g.add(b); brick(b, .66, .03, .48, TANP, 0, .015, 0);
   for (const [x, z] of [[-.24, -.14], [-.08, -.16], [.08, -.14], [.24, -.16], [-.14, .1], [.04, .12], [.22, .1]]) renegade(b, x, z, true);
 }
-function extProp(g, name) {
-  if (/Abtr/.test(name)) { renegades(g); return; }
+// Freien Platz für eine Felderweiterung suchen: nichts darf in Gebäuden, Bäumen, Fahrzeugen oder der Flagge stecken
+function placeProp(g, e, w, d) {
+  g.updateMatrixWorld(true);
+  const gi = new THREE.Matrix4().copy(g.matrixWorld).invert(), obs = [], tmp = new THREE.Box3();
+  g.traverse(o => { if (!o.isMesh || o.isSprite) return; for (let p = o; p && p !== g; p = p.parent) if (p === e) return;
+    tmp.setFromObject(o).applyMatrix4(gi); if (tmp.max.y > .1) obs.push(tmp.clone()); });   // flaches Bodenzeug (Gras, Fliesen, Platte) zählt nicht
+  const fb = new THREE.Box3().setFromObject(e).applyMatrix4(gi); if (fb.isEmpty()) return;
+  const ox = fb.min.x - e.position.x, ox2 = fb.max.x - e.position.x, oz = fb.min.z - e.position.z, oz2 = fb.max.z - e.position.z;
+  const hw = w / 2 - .02, hd = d / 2 - .02, M = .03; let best = null;
+  for (let x = -hw - ox; x <= hw - ox2 + 1e-6; x += .04) for (let z = -hd - oz; z <= hd - oz2 + 1e-6; z += .04) {
+    let s = 0; for (const b of obs) { const ow = Math.min(x + ox2, b.max.x + M) - Math.max(x + ox, b.min.x - M), od = Math.min(z + oz2, b.max.z + M) - Math.max(z + oz, b.min.z - M); if (ow > 0 && od > 0) s += ow * od; }
+    const sc = s * 100 + Math.hypot(x - e.position.x, z - e.position.z) * .01;   // möglichst frei, sonst möglichst nah an der alten Ecke
+    if (!best || sc < best.sc) best = { sc, x, z };
+  }
+  if (best) e.position.set(best.x, e.position.y, best.z);
+}
+function extProp(g, name, w = 1.54, d = 1.54) {
   const e = G(); e.position.set(-.5, 0, .5); g.add(e);
+  if (/Abtr/.test(name)) { e.position.set(0, 0, 0); renegades(e); placeProp(g, e, w, d); return e; }
   if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
   else if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
   else if (/Jeep/.test(name)) jeep(e, .55, -.15, .3, .38);
   else if (/Flugzeug/.test(name)) wreck(e, .4, -.35, .3, .32, S3 && S3.smokes);
   else if (/Kutsche/.test(name)) cart(e, .3, -.1, .35);
   else { for (let i = 0; i < 4; i++) sandbag(e, i * .17, .07, 0); }
+  placeProp(g, e, w, d);
   return e;
 }
 
@@ -242,23 +259,28 @@ function setup(box) {
   new ResizeObserver(resize).observe(box); resize();
   (function loop() { requestAnimationFrame(loop); if (!S3 || box.offsetParent === null || document.hidden) return; const t = performance.now() / 1000; ctl.update();
     for (const pf of S3.smokes) { const k = (t * .22 + pf.ph) % 1; pf.m.position.set(pf.x0 + Math.sin(t * .8 + pf.wob) * .12 * k, .35 + k * 1.6, pf.z0 + k * .15); pf.m.scale.setScalar(.7 + k * 1.1); S3.dirty = true; }   // Rauch steigt auf
-    if (S3.drops && S3.drops.length) {   // Aufbau: Felder fallen aus der Höhe aufs Brett und federn kurz nach
-      let busy = false;
-      for (const dr of S3.drops) { const e = t - S3.dropT0 - dr.d; let y = 0;
-        if (e < 0) y = 6; else if (e < .42) { const k = e / .42; y = 6 * (1 - k * k); } else if (e < .64) y = .16 * Math.sin((e - .42) / .22 * Math.PI);
-        dr.g.position.y = y; if (e < .64) busy = true; }
-      if (!busy) S3.drops = []; S3.dirty = true;
-    }
+    if (S3.drops && S3.drops.length) stepDrops(t - S3.dropT0);   // Aufbau Stein für Stein
     const L = S3.live; if (L) {
       for (const o of L.sway) { o.rotation.z = Math.sin(t * 1.3 + o.userData.sway) * .04; o.rotation.x = Math.cos(t * 1.1 + o.userData.sway) * .025; }
       for (const o of L.sweep) o.rotation.y = Math.sin(t * .6) * 1.1;
       for (const o of L.flutter) o.rotation.y = Math.sin(t * 3.1) * .3 + Math.sin(t * 7.3) * .08;
       for (const o of L.wave) { const k = (t * .3 + o.userData.wave.ph) % 1; o.position.x = o.userData.wave.x0 - k * .14; o.scale.z = 1 - k * .5; }
-      for (const pf of L.puffs) { const k = (t * .32 + pf.ph) % 1; pf.m.position.set(pf.p0.x - k * .12 + Math.sin(t + pf.wob) * .03 * k, pf.p0.y + k * .9, pf.p0.z); pf.m.scale.setScalar(.5 + k * 1.1); pf.m.visible = k > .02 && k < .97; }
+      for (const pf of L.puffs) { const k = (t * .32 + pf.ph) % 1; pf.m.position.set(pf.p0.x - k * .12 + Math.sin(t + pf.wob) * .03 * k, pf.p0.y + k * .9, pf.p0.z); pf.m.scale.setScalar(.5 + k * 1.1); pf.m.visible = k > .02 && k < .97 && !(S3.drops && S3.drops.length); }
       if (L.sway.length || L.sweep.length || L.flutter.length || L.wave.length || L.puffs.length) S3.dirty = true;
     }
     for (const f of S3.flags) { const p = f.userData.cloth.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) + .25; p.setZ(i, Math.sin(t * 5 + x * 9) * .05 * x * 2); } p.needsUpdate = true; S3.dirty = true; }
     if (S3.dirty) { r.render(scene, cam); S3.dirty = false; } })();
+}
+function stepDrops(t) {
+  let busy = false;
+  for (const dr of S3.drops) {
+    for (const p of dr.pcs) { const e = t - p.t0; let f = 0;
+      if (e <= 0) f = 1; else if (e < .3) { const k = e / .3; f = 1 - k * k; }
+      p.c.visible = e > 0; p.c.position.copy(p.base).addScaledVector(p.dv, f); p.c.rotation.y = p.r0 + p.spin * f; }
+    if (t < dr.end) busy = true; else for (const s of dr.sprites) s.visible = true;
+  }
+  if (!busy) { for (const dr of S3.drops) for (const p of dr.pcs) { p.c.visible = true; p.c.position.copy(p.base); p.c.rotation.y = p.r0; } S3.drops = []; }
+  S3.dirty = true;
 }
 function resize() { if (!S3) return; const w = S3.box.clientWidth, h = S3.box.clientHeight; if (!w || !h) return; S3.r.setSize(w, h, false); S3.cam.aspect = w / h; S3.cam.updateProjectionMatrix(); S3.dirty = true; }
 
@@ -321,7 +343,7 @@ function build() {
       if (o.flex && o.name === 'Flakgeschütz') { const fl = buildUnit('flak', 'de'); fl.scale.setScalar(.3); fl.position.set(-.2, .02, .2); fl.rotation.y = .6; g.add(fl); }
       if (o.flex && o.name === 'Transporter') { const tr = buildUnit('trans', 'de'); tr.scale.setScalar(.27); tr.position.set(-.15, .02, .2); tr.rotation.y = .5; g.add(tr); }
       if (o.flex && o.name === 'Kampfflieger') { const pl = buildUnit('flieger', 'al'); pl.userData.body.position.y = .74; pl.scale.setScalar(.27); pl.position.set(-.15, .02, .15); pl.rotation.y = .5; g.add(pl); } }
-    if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#ffffff', '#111111'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
+    if (ex) { extProp(g, ex.name, w, d); const tg = tag(ex.name, '#ffffff', '#111111'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;
     g.userData.pi = pi; g.userData.tap = true;
   });
@@ -339,6 +361,24 @@ function build() {
   });
   // Lebendige Details einsammeln: wiegende Bäume, Suchscheinwerfer, Windsack, Schaumkronen, Rauch aus dem Lok-Schornstein
   board.updateMatrixWorld(true);
+  // Neue Karte: jedes Feld setzt sich Stein für Stein zusammen (von unten nach oben, jeder Stein fällt einzeln von oben ein)
+  if (S3.drops.length && matchMedia('(prefers-reduced-motion:reduce)').matches) S3.drops = [];
+  if (S3.drops.length) {
+    const wp = new THREE.Vector3(), a = new THREE.Vector3(), b = new THREE.Vector3();
+    for (const dr of S3.drops) {
+      const pcs = []; dr.sprites = [];
+      (function walk(o) { for (const c of o.children) { if (c.isSprite) { dr.sprites.push(c); continue; } if (c.userData.brick || c.isMesh) pcs.push(c); else walk(c); } })(dr.g);
+      for (const c of pcs) c.userData._y = c.getWorldPosition(wp).y;
+      pcs.sort((p, q) => p.userData._y - q.userData._y);
+      const n = pcs.length, span = Math.min(1.5, .4 + n * .005);
+      dr.pcs = pcs.map((c, i) => { c.getWorldPosition(wp); a.copy(wp); b.copy(wp).add(new THREE.Vector3((Math.random() - .5) * .5, 1.6 + Math.random() * 1.2, (Math.random() - .5) * .5));
+        c.parent.worldToLocal(a); c.parent.worldToLocal(b);
+        return { c, base: c.position.clone(), dv: b.clone().sub(a), r0: c.rotation.y, spin: (Math.random() - .5) * 4, t0: dr.d * 1.6 + i / n * span }; });
+      dr.end = dr.d * 1.6 + span + .4;
+      for (const s of dr.sprites) s.visible = false;
+    }
+    S3.dropT0 = performance.now() / 1000; stepDrops(0);
+  }
   const L = S3.live, puffGeo = new THREE.CylinderGeometry(.06, .06, .055, 14), studGeo = new THREE.CylinderGeometry(.033, .033, .03, 10);
   board.traverse(o => {
     const u = o.userData; if (u.sway != null) L.sway.push(o); if (u.sweep) L.sweep.push(o); if (u.flutter) L.flutter.push(o); if (u.wave) L.wave.push(o);
@@ -346,7 +386,6 @@ function build() {
       const top = p.worldToLocal(o.getWorldPosition(new THREE.Vector3())); top.y += .03;
       for (let i = 0; i < 9; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066][i % 3], m = G(); m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / 9, wob: Math.random() * 6 }); } }
   });
-  if (S3.drops.length) { S3.dropT0 = performance.now() / 1000; for (const dr of S3.drops) dr.g.position.y = 6; }
   // Kamera: Anflug von schräg oben
   const asp = box.clientWidth / Math.max(1, box.clientHeight), target = new THREE.Vector3(0, 0, 0), dist = Math.max(W, D) * (port ? 1.95 : 1.05 * Math.max(1, 1.8 / asp));   // Abstand passt sich dem Fenster an (auch gedreht)
   const endPos = port ? new THREE.Vector3(0, dist * .66, dist * .56) : new THREE.Vector3(0, dist * .62, dist * .62);

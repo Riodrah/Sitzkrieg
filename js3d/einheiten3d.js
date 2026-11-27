@@ -180,9 +180,13 @@ function muzzleOf(obj) {
 }
 function recoil(obj, axis = 'z', amt = .06, t = .12) { if (!obj || !window.gsap) return; const o = obj.position[axis]; gsap.fromTo(obj.position, { [axis]: o - amt }, { [axis]: o, duration: t, ease: 'power2.out' }); }
 // Sounds zu den Aktionen (Waffen-Sounds aus js/sounds.js; Flammenwerfer wird als Rauschen erzeugt)
-const snd = (n, rate = 1) => { try { if (typeof Sounds !== 'undefined') Sounds.play(n, rate); } catch (e) { } };
+// Töne der Spielkarten nur, wenn der Spiel-Tab gerade offen ist
+const onSpiel = () => { const t = document.getElementById('tab-spiel'); return !!t && !t.hidden && !document.hidden; };
+window.onSpiel = onSpiel;
+const snd = (n, rate = 1) => { if (!onSpiel()) return; try { if (typeof Sounds !== 'undefined') Sounds.play(n, rate); } catch (e) { } };
 let FCTX = null;
 function flameSound(dur = 1.1) {
+  if (!onSpiel()) return;
   try {
     const vol = typeof MASTER_VOL !== 'undefined' ? MASTER_VOL : .8; if (vol <= 0) return;
     FCTX = FCTX || new (window.AudioContext || window.webkitAudioContext)(); const c = FCTX; if (c.state === 'suspended') c.resume();
@@ -464,7 +468,7 @@ function fireScene() {
 let KAMIN = null, kaminBuf = null;
 async function kaminStart() {
   try {
-    const vol = typeof MASTER_VOL !== 'undefined' ? MASTER_VOL : .8; if (vol <= 0 || KAMIN) return;
+    const vol = typeof MASTER_VOL !== 'undefined' ? MASTER_VOL : .8; if (vol <= 0 || KAMIN || !onSpiel()) return;
     FCTX = FCTX || new (window.AudioContext || window.webkitAudioContext)(); const c = FCTX; if (c.state === 'suspended') c.resume();
     if (!kaminBuf) kaminBuf = await c.decodeAudioData(await (await fetch('assets/sounds/kamin.mp3')).arrayBuffer());
     if (!fire3 || KAMIN) return;
@@ -485,7 +489,9 @@ function mountFire() {
   const me = fire3 = { wrap, ...sc, cam, last: performance.now(), t0: performance.now() };
   kaminStart();
   (function loop() {
-    if (fire3 !== me || !wrap.isConnected) { if (fire3 === me) { fire3 = null; kaminStop(); } return; } requestAnimationFrame(loop); if (document.hidden) return;
+    if (fire3 !== me || !wrap.isConnected) { if (fire3 === me) { fire3 = null; kaminStop(); } return; } requestAnimationFrame(loop);
+    if (!onSpiel()) { kaminStop(); return; } if (!KAMIN) kaminStart();   // Kaminfeuer nur hörbar, solange der Spiel-Tab offen ist
+    if (document.hidden) return;
     const now = performance.now(), dt = Math.min(.05, (now - me.last) / 1000), t = (now - me.t0) / 1000; me.last = now;
     for (const f of me.flames) { const k = 1 + Math.sin(t * 13 + f.ph) * .12 + Math.sin(t * 7.3 + f.ph * 2) * .08; f.f.scale.set(1 - (k - 1) * .5, k, 1 - (k - 1) * .5); f.f.rotation.y += dt * 2; }
     me.light.intensity = 5 + Math.sin(t * 17) * 1.2 + Math.sin(t * 9) * .8;

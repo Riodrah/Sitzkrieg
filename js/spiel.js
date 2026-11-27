@@ -174,7 +174,7 @@ function playFx(gc,c,replay){
   if(fx.length) art.insertAdjacentHTML('beforeend','<span class="fxl">'+fx.map(f=>fxEl(f,base)).join('')+'</span>');
   if(FX_SHAKE.has(kind)||FX_SHAKE.has(abil)) gc.classList.add('fx-shake');
   if(replay) gc.classList.add('no-flip'); else gc.classList.add('flip-in');
-  if(kind==='flieger'&&typeof Sounds!=='undefined') try{ setTimeout(()=>Sounds.play('plane'),replay?0:250); }catch(e){}
+  if(kind==='flieger'&&typeof Sounds!=='undefined') try{ setTimeout(()=>{ if(spielOffen()) Sounds.play('plane'); },replay?0:250); }catch(e){}
 }
 // Bild der Einheit antippen -> Animation nochmal
 document.addEventListener('click',e=>{ const a=e.target.closest('#tab-spiel .gcard .gc-art'); if(!a||S.end!==null||!S.cur) return; playFx(a.closest('.gcard'),S.cur,true); });
@@ -227,7 +227,9 @@ const FX_GEN={
 };
 // Rundenwechsel: großes Banner „Runde N“ fährt durchs Bild, dazu ein kurzer Trommelwirbel
 let drumCtx=null;
+const spielOffen=()=>{ const t=$('tab-spiel'); return !!t&&!t.hidden&&!document.hidden; };   // Töne nur, solange der Spiel-Tab offen ist
 function drumRoll(){
+  if(!spielOffen()) return;
   try{
     const vol=typeof MASTER_VOL!=='undefined'?MASTER_VOL:.8; if(vol<=0) return;
     drumCtx=drumCtx||new (window.AudioContext||window.webkitAudioContext)(); const c=drumCtx; if(c.state==='suspended') c.resume();
@@ -239,7 +241,7 @@ function drumRoll(){
   }catch(e){}
 }
 function roundBanner(n){
-  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches||!spielOffen()) return;
   const b=document.createElement('div'); b.className='round-banner'; b.innerHTML=`<span>Runde ${n}</span>`; document.body.appendChild(b);
   drumRoll(); setTimeout(()=>b.remove(),2300);
 }
