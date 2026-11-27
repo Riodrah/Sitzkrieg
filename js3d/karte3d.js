@@ -280,8 +280,12 @@ function build() {
     if (x.p.key === 'bunker') {   // zufällige Richtung (fest je Karte), die Schießscharte (+z im Modell) zeigt nie zum Spielfeldrand
       const ok = [0, HALF, Math.PI, -HALF].filter(a => { const dx = Math.round(Math.sin(a)), dz = Math.round(Math.cos(a));
         return !(dx > 0 && g.position.x + CELL / 2 > W / 2 - .05) && !(dx < 0 && g.position.x - CELL / 2 < -W / 2 + .05) && !(dz > 0 && g.position.z + CELL / 2 > D / 2 - .05) && !(dz < 0 && g.position.z - CELL / 2 < -D / 2 + .05); });
-      const h = (((current.seed | 0) ^ Math.imul(pi + 1, 2654435761)) >>> 0) % 1000;
-      if (ok.length) t.rotation.y = ok[h % ok.length];
+      // bevorzugt auf offenes Gelände zielen: Flachland, See, leere Straße, Strand oder Wald – sonst auf ein anderes Feld
+      const OPEN = new Set(['flach', 'see', 'strasse', 'strand', 'wald']), cell = x.cells[0], r0 = Math.floor(cell / COLS), c0 = cell % COLS;
+      const keyAt = (r, c) => { const i = r * COLS + c, q = current.pieces.find(pp => pp.cells.includes(i)); return q ? q.p.key : null; };
+      const good = ok.filter(a => OPEN.has(keyAt(r0 + Math.round(Math.cos(a)), c0 + Math.round(Math.sin(a)))));
+      const pick = good.length ? good : ok, h = (((current.seed | 0) ^ Math.imul(pi + 1, 2654435761)) >>> 0) % 1000;
+      if (pick.length) t.rotation.y = pick[h % pick.length];
     }
     if (x.p.key === 'kirche') { const p = w > d ? g.position.z : g.position.x; if (p > .01) t.rotation.y = Math.PI; }   // Kirchenportal zur Kartenmitte drehen
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
