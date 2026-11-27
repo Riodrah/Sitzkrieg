@@ -358,10 +358,10 @@ function tower3(g) {
   for (const sz of [-1, 1]) { box(g, .98, .035, .035, WOOD2, 0, H + .29, sz * .47); box(g, .035, .035, .98, WOOD2, sz * .47, H + .29, 0); box(g, .98, .03, .03, WOOD2, 0, H + .17, sz * .47); box(g, .03, .03, .98, WOOD2, sz * .47, H + .17, 0); }
   box(g, .4, .015, .26, 0x8a3a1a, .1, H + .07, .15);                                        // Luke
   box(g, .14, .1, .12, 0xb4b8bb, -.3, H + .11, -.3); box(g, .12, .08, .1, 0x9aa0a4, .32, H + .1, -.32);   // Funkkisten
-  const sl = G(); sl.position.set(-.25, H + .16, .28); g.add(sl); cyl(sl, .02, .08, 0x9aa0a4, 0, 0, 0); const lamp = cyl(sl, .06, .14, WHT2, 0, .07, .05, HALF, 0, 14); cyl(sl, .05, .01, 0xfff2b0, 0, .07, .12, HALF, 0, 14);
+  const sl = G(); sl.position.set(-.25, H + .16, .28); g.add(sl); sl.userData.sweep = true;   // Suchscheinwerfer schwenkt hin und her cyl(sl, .02, .08, 0x9aa0a4, 0, 0, 0); const lamp = cyl(sl, .06, .14, WHT2, 0, .07, .05, HALF, 0, 14); cyl(sl, .05, .01, 0xfff2b0, 0, .07, .12, HALF, 0, 14);
   cyl(g, .012, .75, 0x1b1b1b, -.4, H + .45, -.4); for (const y of [.55, .65]) cyl(g, .08, .02, 0xc8ccce, -.4, H + y, -.4, 0, 0, 18);   // Antennenmast mit Schüsseln
   cyl(g, .006, .35, 0x1b1b1b, -.3, H + .3, -.42, .15);
-  cyl(g, .012, .5, 0x1b1b1b, .42, H + .3, .42); const ws = new THREE.Mesh(new THREE.ConeGeometry(.05, .22, 10, 1, true), plastic(WHT2, { side: THREE.DoubleSide })); ws.rotation.z = HALF; ws.position.set(.53, H + .52, .42); g.add(ws);   // Windsack
+  cyl(g, .012, .5, 0x1b1b1b, .42, H + .3, .42); const ws = new THREE.Mesh(new THREE.ConeGeometry(.05, .22, 10, 1, true), plastic(WHT2, { side: THREE.DoubleSide })); ws.rotation.z = HALF; ws.position.set(.53, H + .52, .42); g.add(ws); ws.userData.flutter = true;   // Windsack (flattert)
   // Kraftrad und Fass am Fuß
   cyl(g, .05, .1, 0x4d5530, .18, .05, -.18);
 }
@@ -541,6 +541,8 @@ function beach3(g, w, d) {
   box(g, .2, .03, .14, 0x5a6a2a, -.45, .045, -.15, 0, .3, 0); box(g, .2, .03, .16, 0x5a6a2a, -.55, .045, -.02, 0, -.2, 0);
   box(g, .14, .03, .14, 0x7a3e14, -.52, .045, -.48); box(g, .04, .03, .16, 0xd9741a, -.68, .045, -.1); box(g, .04, .03, .12, 0xd9741a, -.38, .045, -.7);
   for (const [x, z] of [[-.6, .45], [-.32, -.55]]) box(g, .05, .04, .05, 0x10302a, x, .05, z, 0, .5, 0);
+  // Schaumkronen: weiße Fliesen im Wasser vor der Küste, rollen auf der 3D-Karte sanft an den Strand
+  for (let i = 0; i < 7; i++) { const z = -hd + .12 + i * (2 * hd - .24) / 6, x0 = coast(z) + .1 + (i % 2) * .05; const f = box(g, .03, .012, .12 + (i % 3) * .03, 0xf4f8fa, x0, .012, z); f.userData.wave = { x0, ph: i * .9 }; }
 }
 
 // ---- Zug nach Fotos: Gleis mit Schotterbett am Rand, schwarze Tenderlok mit rotem Fahrwerk, Prellbock aus Holz, Fässer ----
@@ -558,7 +560,7 @@ function loco(g, x0, z0) {
   const boiler = cyl(n, .19, .98, LOKB, .3, .42, 0, 0, HALF, 26);
   cyl(n, .2, .04, 0x2a2c2e, .8, .42, 0, 0, HALF, 26); cyl(n, .04, .05, 0x3a3c3e, .83, .42, 0, 0, HALF, 12);   // Rauchkammertür
   for (const sz of [-1, 1]) { box(n, .78, .2, .09, LOKB, .25, .33, sz * .2); cyl(n, .008, .9, 0x0e0e0e, .32, .5, sz * .17, 0, HALF, 6); }   // Wasserkästen + Griffstange
-  cyl(n, .055, .2, LOKB, .68, .7, 0, 0, 0, 16); cyl(n, .07, .03, LOKB, .68, .8, 0, 0, 0, 16);                                        // Schornstein
+  cyl(n, .055, .2, LOKB, .68, .7, 0, 0, 0, 16); cyl(n, .07, .03, LOKB, .68, .8, 0, 0, 0, 16).userData.chimney = true;                 // Schornstein (raucht auf der 3D-Karte)
   for (const dx of [.2, .42]) { const dm = new THREE.Mesh(new THREE.SphereGeometry(.085, 18, 10, 0, Math.PI * 2, 0, Math.PI / 2), plastic(LOKB)); dm.position.set(dx, .6, 0); n.add(dm); cyl(n, .088, .06, LOKB, dx, .58, 0, 0, 0, 18); cyl(n, .02, .03, LOKB, dx, .69, 0, 0, 0, 10); }
   box(n, .48, .42, .46, LOKB, -.42, .45, 0);                                                     // Führerhaus
   box(n, .54, .05, .5, LOKB, -.42, .69, 0); box(n, .4, .04, .3, LOKB, -.42, .73, 0);
@@ -648,7 +650,7 @@ function starGeo() {
   return STAR.g;
 }
 function bigTree(g, x, z, c, s = 1) {
-  const n = G(); n.position.set(x, 0, z); n.scale.setScalar(s); g.add(n);
+  const n = G(); n.position.set(x, 0, z); n.scale.setScalar(s); g.add(n); n.userData.sway = R() * 6;   // wiegt sich auf der 3D-Karte im Wind
   const TR = 0x7a4a24;
   box(n, .1, .6, .1, TR, 0, .3, 0); for (const a of [0, HALF, Math.PI, -HALF]) box(n, .16, .04, .05, TR, Math.cos(a) * .08, .02, Math.sin(a) * .08, 0, -a, 0);   // Stamm mit Wurzelfüßen
   for (const [a, y] of [[.5, .35], [2.6, .45], [4.4, .3], [1.6, .55]]) box(n, .05, .3, .05, TR, Math.cos(a) * .08, y + .1, Math.sin(a) * .08, Math.sin(a) * .6, 0, -Math.cos(a) * .6);

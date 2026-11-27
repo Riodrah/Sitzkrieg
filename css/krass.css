@@ -120,6 +120,20 @@ html[data-theme="dark"] .cell{filter:brightness(.92) saturate(1.05)!important}
 .gc-abil{border:3px solid var(--ink-k)!important;box-shadow:4px 4px 0 var(--ink-k)!important;transform:rotate(-1deg)!important}
 .gc-abil .ga-h{background:repeating-linear-gradient(-45deg,rgba(255,255,255,.07) 0 5px,transparent 5px 10px),var(--stamp)!important;border-bottom:2px solid var(--ink-k)}
 .gp-next{border:3px solid var(--ink-k)!important;box-shadow:0 0 0 3px #c9b878,0 0 0 6px var(--ink-k),5px 7px 0 5px rgba(0,0,0,.6)!important}
+/* Spiel-Tab: Hintergrund leicht in der Farbe der Seite, die dran ist (Rundenende rötlich) */
+#tab-spiel{border-radius:14px;transition:background-color .5s,box-shadow .5s}
+#tab-spiel[data-turn="de"]{background-color:rgba(90,112,140,.2);box-shadow:inset 0 0 60px rgba(90,112,140,.35)}
+#tab-spiel[data-turn="al"]{background-color:rgba(110,124,50,.2);box-shadow:inset 0 0 60px rgba(110,124,50,.35)}
+#tab-spiel[data-turn="end"]{background-color:rgba(150,50,30,.2);box-shadow:inset 0 0 60px rgba(150,50,30,.35)}
+/* Rundenwechsel-Banner */
+.round-banner{position:fixed;left:0;right:0;top:38%;z-index:9999;pointer-events:none;display:flex;justify-content:center;
+  background:repeating-linear-gradient(-45deg,rgba(255,255,255,.06) 0 10px,transparent 10px 20px),linear-gradient(#b0442c,#4e1a10);
+  border-top:4px solid var(--ink-k);border-bottom:4px solid var(--ink-k);box-shadow:0 0 0 3px #d9826a,0 12px 30px rgba(0,0,0,.6);
+  animation:rbIn 2.2s cubic-bezier(.2,.9,.3,1) both}
+.round-banner span{font-family:var(--head);font-size:clamp(2.4rem,9vw,5rem);letter-spacing:.12em;text-transform:uppercase;color:#fff3e0;padding:.12em 0;
+  -webkit-text-stroke:1.5px var(--ink-k);paint-order:stroke fill;text-shadow:4px 4px 0 var(--ink-k);animation:rbText 2.2s cubic-bezier(.2,.9,.3,1) both}
+@keyframes rbIn{0%{transform:translateX(-110%) skewX(-12deg)}18%{transform:translateX(2%) skewX(3deg)}24%,78%{transform:none}100%{transform:translateX(110%) skewX(-12deg)}}
+@keyframes rbText{0%,14%{transform:scale(.6)}26%{transform:scale(1.12) rotate(-2deg)}34%,100%{transform:scale(1) rotate(-1deg)}}
 /* Rundenende: Rahmen, Kopf, Hintergrund und Weiter-Knopf rötlich */
 .gcard.rend{--fc1:#b0442c;--fc2:#4e1a10;background:linear-gradient(#f4ddd0,#ecd0c0)!important;box-shadow:0 0 0 3px #d9826a,0 0 0 6px var(--ink-k),9px 11px 0 4px rgba(0,0,0,.6)!important}
 html[data-theme="dark"] .gcard.rend{background:linear-gradient(#3e2620,#2e1c18)!important}

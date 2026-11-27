@@ -308,29 +308,49 @@ function attach(play) {
 // Rundenende: Missionsziel-Felder als 3D-Modell, Flakgeschütz in 3D
 // Das Modell des Missionsziels dreht sich langsam (nur bei Missionszielen, nicht beim Bildschirm „Rauch und Feuer“)
 const OBJ_KEY = { Transporter: 'trans', Kampfflieger: 'flieger', 'Artilleriegeschütz': 'art', 'Flakgeschütz': 'flak' };
-let RER = null, reTurn = null;
+// Drehbühne: ein Modell (Kartenfeld 'feld:…' oder Einheit) dreht sich langsam in einem Platz der Seite
+function turnStage(cls) {
+  const st = { r: null, cur: null };
+  st.show = async (slot, key, w, h) => {
+    await heavy(); const { fieldModel } = await import('./gelaende.js'); if (!slot.isConnected) return;
+    if (!st.r) { st.r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); st.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); st.r.outputColorSpace = THREE.SRGBColorSpace; st.r.toneMapping = THREE.NeutralToneMapping; st.r.toneMappingExposure = .9; st.r.domElement.className = cls; }
+    const r = st.r, scene = new THREE.Scene(); lights(scene, r);
+    const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : buildUnit(key, 'de'), piv = new THREE.Group(); scene.add(piv); piv.add(g);
+    const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
+    const a = w / h, cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.02, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
+    r.setSize(w, h, false); r.domElement.style.width = w + 'px'; r.domElement.style.height = h + 'px';
+    slot.replaceChildren(r.domElement);
+    const me = st.cur = { t0: performance.now() };
+    (function spin() { if (st.cur !== me || !r.domElement.isConnected) { if (st.cur === me) st.cur = null; return; } requestAnimationFrame(spin); if (document.hidden) return;
+      piv.rotation.y = -.3 + (performance.now() - me.t0) / 1000 * .5; r.render(scene, cam); })();
+  };
+  return st;
+}
+const reStage = turnStage('re3d'), fieldStage = turnStage('fi3d');
+const pieceOf = name => typeof PIECES !== 'undefined' ? PIECES.find(x => x.name === name || (x.key === 'wohn' && name === 'Wohnhaus')) : null;
 async function roundEnd() {
   const ic = document.querySelector('#tab-spiel .gcard.rend:not(.refire) .re-ic'); if (!ic || ic.dataset.d3) return; ic.dataset.d3 = '1';
-  const name = (ic.parentElement.querySelector('.gc-name')?.textContent || '').replace('⚑', '').trim();
-  const p = typeof PIECES !== 'undefined' ? PIECES.find(x => x.name === name || (x.key === 'wohn' && name === 'Wohnhaus')) : null;
+  const name = (ic.parentElement.querySelector('.gc-name')?.textContent || '').replace('⚑', '').trim(), p = pieceOf(name);
   const key = OBJ_KEY[name] || (p ? 'feld:' + p.key : null); if (!key) return;
   // sofort ein Standbild zeigen, dann durch die Drehbühne ersetzen
   const slot = ic.querySelector('.re-emo, .re-art'); getPhoto(key, 'de', 260).then(u => { if (slot && slot.isConnected && !ic.querySelector('canvas')) slot.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
-  if (still) return;
-  await heavy(); const { fieldModel } = await import('./gelaende.js'); if (!ic.isConnected) return;
-  if (!RER) { RER = new THREE.WebGLRenderer({ antialias: true, alpha: true }); RER.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); RER.outputColorSpace = THREE.SRGBColorSpace; RER.toneMapping = THREE.NeutralToneMapping; RER.toneMappingExposure = .9; RER.domElement.className = 're3d'; }
-  const scene = new THREE.Scene(); lights(scene, RER);
-  const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : buildUnit(key, 'de'), piv = new THREE.Group(); scene.add(piv); piv.add(g);
-  const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
-  const h = Math.max(90, (ic.clientHeight || 230) - 4), w = Math.max(140, Math.min(ic.clientWidth || 420, Math.round(h * 1.8))), a = w / h;   // füllt den Bildbereich der Karte
-  const cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.02, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
-  RER.setSize(w, h, false); RER.domElement.style.width = w + 'px'; RER.domElement.style.height = h + 'px';
-  if (slot) slot.replaceChildren(RER.domElement); else ic.appendChild(RER.domElement);
-  const me = reTurn = { t0: performance.now() };
-  (function spin() { if (reTurn !== me || !RER.domElement.isConnected) { if (reTurn === me) reTurn = null; return; } requestAnimationFrame(spin); if (document.hidden) return;
-    piv.rotation.y = -.3 + (performance.now() - me.t0) / 1000 * .5; RER.render(scene, cam); })();
+  if (still || !slot) return;
+  const h = Math.max(90, (ic.clientHeight || 230) - 4), w = Math.max(140, Math.min(ic.clientWidth || 420, Math.round(h * 1.8)));   // füllt den Bildbereich der Karte
+  reStage.show(slot, key, w, h);
 }
 new MutationObserver(roundEnd).observe(document.getElementById('tab-spiel'), { childList: true });
+// Kartenansicht: Feld antippen – im Popup dreht sich das 3D-Modell des Feldes statt des Emoji-Bildes
+function fieldPopup3d() {
+  const pop = document.getElementById('pop'); if (!pop || pop.hidden || !pop.classList.contains('feld')) return;
+  const head = pop.querySelector('#pop-body .fi-head'); if (!head || head.dataset.d3) return; head.dataset.d3 = '1';
+  const p = pieceOf(document.getElementById('pop-t')?.textContent.trim()); if (!p) return;
+  const key = 'feld:' + p.key; head.classList.add('fi-3d');
+  getPhoto(key, 'de', 240).then(u => { if (head.isConnected && !head.querySelector('canvas')) head.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
+  if (still) return;
+  const w = Math.min(340, Math.max(200, (head.clientWidth || pop.querySelector('.pop-card')?.clientWidth || 300) - 8)), h = Math.round(w * .62);
+  fieldStage.show(head, key, w, h);
+}
+{ const pop = document.getElementById('pop'); if (pop) new MutationObserver(() => setTimeout(fieldPopup3d, 20)).observe(pop, { attributes: true, attributeFilter: ['hidden'], childList: true, subtree: true }); }
 
 // Bild antippen: Aktion der 3D-Szene erneut abspielen
 document.addEventListener('click', e => { const a = e.target.closest('#tab-spiel .gcard .gc-art'); if (a && view && view.art === a) act(view); });

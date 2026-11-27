@@ -225,6 +225,24 @@ const FX_GEN={
   Anführer:[{t:'ray',x:50,y:45,d:0,c:'#ffd84a'},{t:'star',x:50,y:12,d:.15}],
   Unbarmherzig:[...PISTOL,{t:'boom',x:90,y:20,d:.15,s:.8},{t:'boom',x:94,y:50,d:.3,s:.8},...Array.from({length:6},(_,i)=>({t:'sp',x:90,y:20,d:.2+i*.03,a:i*60,c:'#b0281c'}))]
 };
+// Rundenwechsel: großes Banner „Runde N“ fährt durchs Bild, dazu ein kurzer Trommelwirbel
+let drumCtx=null;
+function drumRoll(){
+  try{
+    const vol=typeof MASTER_VOL!=='undefined'?MASTER_VOL:.8; if(vol<=0) return;
+    drumCtx=drumCtx||new (window.AudioContext||window.webkitAudioContext)(); const c=drumCtx; if(c.state==='suspended') c.resume();
+    const hit=(t,dur,f,g0)=>{ const len=Math.ceil(c.sampleRate*dur), b=c.createBuffer(1,len,c.sampleRate), d=b.getChannelData(0); for(let i=0;i<len;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+      const s=c.createBufferSource(); s.buffer=b; const fl=c.createBiquadFilter(); fl.type='bandpass'; fl.frequency.value=f; fl.Q.value=.9; const g=c.createGain(); g.gain.value=g0*vol; s.connect(fl).connect(g).connect(c.destination); s.start(t); };
+    const t0=c.currentTime+.02; let t=t0, gap=.085;
+    for(let i=0;i<14;i++){ hit(t,.07,1800,.35+i*.025); t+=gap; gap=Math.max(.04,gap*.93); }   // Wirbel auf der Snare
+    hit(t+.02,.5,180,1.1); hit(t+.02,.35,2600,.5);                                           // Schlussschlag
+  }catch(e){}
+}
+function roundBanner(n){
+  if(matchMedia('(prefers-reduced-motion:reduce)').matches) return;
+  const b=document.createElement('div'); b.className='round-banner'; b.innerHTML=`<span>Runde ${n}</span>`; document.body.appendChild(b);
+  drumRoll(); setTimeout(()=>b.remove(),2300);
+}
 function render(){
   const el=$('tab-spiel'); if(!el) return;
   if(S.sig!==sigNow()) reset();
@@ -242,7 +260,10 @@ function render(){
   if(gc&&cardKey!==lastCardKey&&lastCardKey!==null){
     gc.classList.add('flip-in');
     if(S.end===null&&S.cur) playFx(gc,S.cur,false);
+    if(S.newRound) roundBanner(S.round);
   }
+  // Hintergrund des Spiel-Tabs in der Farbe der Seite, die dran ist (Rundenende: rötlich)
+  el.dataset.turn=S.end!==null?'end':(S.cur?S.cur.side:'');
   lastCardKey=cardKey;
   if(gc){
     if(window.linkRules) linkRules(gc);

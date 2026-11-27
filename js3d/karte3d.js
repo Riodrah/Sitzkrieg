@@ -242,6 +242,21 @@ function setup(box) {
   new ResizeObserver(resize).observe(box); resize();
   (function loop() { requestAnimationFrame(loop); if (!S3 || box.offsetParent === null || document.hidden) return; const t = performance.now() / 1000; ctl.update();
     for (const pf of S3.smokes) { const k = (t * .22 + pf.ph) % 1; pf.m.position.set(pf.x0 + Math.sin(t * .8 + pf.wob) * .12 * k, .35 + k * 1.6, pf.z0 + k * .15); pf.m.scale.setScalar(.7 + k * 1.1); S3.dirty = true; }   // Rauch steigt auf
+    if (S3.drops && S3.drops.length) {   // Aufbau: Felder fallen aus der Höhe aufs Brett und federn kurz nach
+      let busy = false;
+      for (const dr of S3.drops) { const e = t - S3.dropT0 - dr.d; let y = 0;
+        if (e < 0) y = 6; else if (e < .42) { const k = e / .42; y = 6 * (1 - k * k); } else if (e < .64) y = .16 * Math.sin((e - .42) / .22 * Math.PI);
+        dr.g.position.y = y; if (e < .64) busy = true; }
+      if (!busy) S3.drops = []; S3.dirty = true;
+    }
+    const L = S3.live; if (L) {
+      for (const o of L.sway) { o.rotation.z = Math.sin(t * 1.3 + o.userData.sway) * .04; o.rotation.x = Math.cos(t * 1.1 + o.userData.sway) * .025; }
+      for (const o of L.sweep) o.rotation.y = Math.sin(t * .6) * 1.1;
+      for (const o of L.flutter) o.rotation.y = Math.sin(t * 3.1) * .3 + Math.sin(t * 7.3) * .08;
+      for (const o of L.wave) { const k = (t * .3 + o.userData.wave.ph) % 1; o.position.x = o.userData.wave.x0 - k * .14; o.scale.z = 1 - k * .5; }
+      for (const pf of L.puffs) { const k = (t * .32 + pf.ph) % 1; pf.m.position.set(pf.p0.x - k * .12 + Math.sin(t + pf.wob) * .03 * k, pf.p0.y + k * .9, pf.p0.z); pf.m.scale.setScalar(.5 + k * 1.1); pf.m.visible = k > .02 && k < .97; }
+      if (L.sway.length || L.sweep.length || L.flutter.length || L.wave.length || L.puffs.length) S3.dirty = true;
+    }
     for (const f of S3.flags) { const p = f.userData.cloth.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) + .25; p.setZ(i, Math.sin(t * 5 + x * 9) * .05 * x * 2); } p.needsUpdate = true; S3.dirty = true; }
     if (S3.dirty) { r.render(scene, cam); S3.dirty = false; } })();
 }
@@ -252,7 +267,8 @@ function build() {
   const box = document.getElementById('map3d'); if (!box) return;
   if (!S3) setup(box);
   if (S3.board) { S3.scene.remove(S3.board); S3.board.traverse(o => { if (o.geometry && !o.geometry.parameters?.cached) o.geometry.dispose?.(); }); }
-  S3.flags = []; S3.smokes = [];
+  S3.flags = []; S3.smokes = []; S3.live = { sway: [], sweep: [], flutter: [], wave: [], puffs: [] };
+  const fresh = S3.seed !== current.seed; S3.seed = current.seed; S3.drops = [];   // neue Karte: Felder fallen nacheinander aufs Brett
   const board = G(); S3.board = board; S3.scene.add(board);
   const port = typeof isPortrait === 'function' ? isPortrait() : box.clientHeight > box.clientWidth;   // gleiche Drehung wie die 2D-Karte
   box.classList.toggle('quer', !port); resize();
@@ -269,6 +285,7 @@ function build() {
     const w = (c1 - c0 + 1) * CELL - GAP, d = (r1 - r0 + 1) * CELL - GAP;
     const [x0, z0] = toXZ(r0, c0), [x1, z1] = toXZ(r1, c1);
     const g = G(); g.position.set((x0 + x1) / 2, 0, (z0 + z1) / 2); board.add(g);
+    if (fresh) S3.drops.push({ g, d: (r0 + c0) * .07 + Math.random() * .05 });
     const plate = brick(g, w, .08, d, TERRAIN[x.p.key] || 0x86a84a, 0, -.04, 0); plate.traverse(o => o.receiveShadow = true);
     const t = G(); t.position.y = .025; g.add(t); terrain(x.p.key, t, w, d);
     // Alle Felder ohne feste Ausrichtung zufällig drehen (fest je Karte): einzeln in 4 Richtungen, lange Teile um 0° oder 180°
@@ -320,6 +337,16 @@ function build() {
       const t = -len / 2 + (i + .5) * len / n; a.position.set(long ? x + t : x, .22, long ? z : z + t); board.add(a); }
     if (k === 0) { const ins = insignia(board, side, .36, x, .21, z, 0, -HALF); ins.position.set(long ? x + len * .5 / n : x, .22, long ? z : z + len * .5 / n); }
   });
+  // Lebendige Details einsammeln: wiegende Bäume, Suchscheinwerfer, Windsack, Schaumkronen, Rauch aus dem Lok-Schornstein
+  board.updateMatrixWorld(true);
+  const L = S3.live, puffGeo = new THREE.CylinderGeometry(.06, .06, .055, 14), studGeo = new THREE.CylinderGeometry(.033, .033, .03, 10);
+  board.traverse(o => {
+    const u = o.userData; if (u.sway != null) L.sway.push(o); if (u.sweep) L.sweep.push(o); if (u.flutter) L.flutter.push(o); if (u.wave) L.wave.push(o);
+    if (u.chimney) { let p = o; while (p && p.userData.pi == null) p = p.parent; if (!p) return;
+      const top = p.worldToLocal(o.getWorldPosition(new THREE.Vector3())); top.y += .03;
+      for (let i = 0; i < 9; i++) { const c = [0x8a8f94, 0xa6abaf, 0x5b6066][i % 3], m = G(); m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .042; m.add(st); p.add(m); L.puffs.push({ m, p0: top.clone(), ph: i / 9, wob: Math.random() * 6 }); } }
+  });
+  if (S3.drops.length) { S3.dropT0 = performance.now() / 1000; for (const dr of S3.drops) dr.g.position.y = 6; }
   // Kamera: Anflug von schräg oben
   const asp = box.clientWidth / Math.max(1, box.clientHeight), target = new THREE.Vector3(0, 0, 0), dist = Math.max(W, D) * (port ? 1.95 : 1.05 * Math.max(1, 1.8 / asp));   // Abstand passt sich dem Fenster an (auch gedreht)
   const endPos = port ? new THREE.Vector3(0, dist * .66, dist * .56) : new THREE.Vector3(0, dist * .62, dist * .62);

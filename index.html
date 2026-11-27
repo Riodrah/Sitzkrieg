@@ -25,11 +25,17 @@
 <link rel="stylesheet" href="css/basis.css?v=da717d893f">
 <link rel="stylesheet" href="css/app.css?v=3cd26f44be">
 
-<link rel="stylesheet" href="css/spiel.css?v=8737e1f7e6">
-<link rel="stylesheet" href="css/krass.css?v=d93185796b">
-<link rel="stylesheet" href="css/lego3d.css?v=a3c3bedae1">
+<link rel="stylesheet" href="css/spiel.css?v=4a173a1606">
+<link rel="stylesheet" href="css/krass.css?v=07fdd9b892">
+<link rel="stylesheet" href="css/lego3d.css?v=4a5b46d1fd">
 </head>
 <body>
+<!-- Ladebildschirm: eine Klemmbaustein-Figur stapelt Steine, bis die 3D-Modelle bereit sind -->
+<div id="loader" aria-hidden="true"><div class="ld-scene">
+  <div class="ld-stack"><i class="b1"></i><i class="b2"></i><i class="b3"></i><i class="b4"></i></div>
+  <div class="ld-fig"><b class="hd"></b><b class="hm"></b><b class="tr"></b><b class="ar"></b><b class="lg"></b></div>
+  <i class="ld-carry"></i>
+</div><p>Steine werden gesteckt …</p></div>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <pattern id="hz-dk" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#5c5142"/><line x1="0" y1="0" x2="0" y2="3" stroke="#1f1a14" stroke-width="1.1"/></pattern>
 <pattern id="hz-de" width="3" height="3" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="3" fill="#a3a08c"/><line x1="0" y1="0" x2="0" y2="3" stroke="#3a3328" stroke-width=".8"/></pattern>
@@ -552,7 +558,7 @@
 <script src="js/armee.js?v=05d29ef2a5"></script>
 <script src="js/missionskarte.js?v=e87afd7c00"></script>
 <script src="js/symbole.js?v=90023643d3"></script>
-<script src="js/spiel.js?v=e1e0a71135"></script>
+<script src="js/spiel.js?v=d522ac404a"></script>
 <script src="js/lobby.js?v=32eb3923dd"></script>
 <script src="js/sounds.js?v=7f9e90c3ee"></script>
 <script src="js/neuwurf.js?v=4cd701aea8"></script>
@@ -561,8 +567,8 @@
 <script src="js/wuerfel.js?v=c6fea4303f"></script>
 <script src="js/krass.js?v=7248b0143c"></script>
 <script src="vendor/gsap.min.js"></script>
-<script type="module" src="js3d/einheiten3d.js?v=6a832a4f33"></script>
-<script type="module" src="js3d/karte3d.js?v=e3b8e0d3bc"></script>
+<script type="module" src="js3d/einheiten3d.js?v=1717e7162a"></script>
+<script type="module" src="js3d/karte3d.js?v=5831f542be"></script>
 <script>
 // App-Modus: Offline-Speicher aktivieren (nur wenn die Seite über eine Web-Adresse geladen wird)
 if('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(()=>{});

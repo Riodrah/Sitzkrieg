@@ -102,8 +102,9 @@ html[data-theme="dark"] .vp-v,html[data-theme="dark"] .d-unit,html[data-theme="d
 .slot-crest svg{display:block;width:100%;height:auto}
 
 /* ===== Übergänge – bewusst kurz, damit schnelles Neu-Würfeln nicht gebremst wird ===== */
-.tabpane.tab-in{animation:tabIn .16s ease-out}
-@keyframes tabIn{from{opacity:.4;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* Tab-Wechsel: neue Seite schiebt sich wie ein Comic-Panel herein (leicht schräg, kurzer Überschwung) */
+.tabpane.tab-in{animation:tabIn .34s cubic-bezier(.2,1.35,.45,1);transform-origin:50% 0}
+@keyframes tabIn{0%{opacity:0;transform:translateX(46px) rotate(1.6deg) scale(.95)}60%{opacity:1;transform:translateX(-5px) rotate(-.4deg) scale(1.005)}100%{opacity:1;transform:none}}
 .gcard.flip-in{animation:flipIn .28s cubic-bezier(.2,.7,.3,1) both;transform-origin:50% 50%}
 @keyframes flipIn{0%{transform:perspective(900px) rotateY(-80deg) translateX(30px);opacity:.3}60%{opacity:1}100%{transform:none;opacity:1}}
 .modal:not([hidden]) .pop-card{animation:sheetIn .18s cubic-bezier(.2,.8,.3,1)}

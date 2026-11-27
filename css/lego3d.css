@@ -88,3 +88,39 @@ html.lego3d :is(.slot-art,.mini,.pu-fig) svg.fig{visibility:hidden}
 /* „Im Regelwerk öffnen“ wird nicht mehr gebraucht */
 #pen-rules{display:none!important}
 .pen-nav:not(:has(#pen-back)){display:none!important}
+
+/* ---------- Ladebildschirm: Figur stapelt Steine, solange die 3D-Modelle laden ---------- */
+#loader{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  background:radial-gradient(circle at 50% 45%,#3a3424,#14140d 70%);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .45s,visibility 0s .45s}
+html.lego3d-wait #loader{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .3s .35s,visibility 0s}
+#loader p{margin:0;font-family:var(--head,Impact);letter-spacing:.12em;text-transform:uppercase;color:#efe2b8;text-shadow:2px 2px 0 #000;animation:ldBlink 1.4s ease-in-out infinite}
+@keyframes ldBlink{50%{opacity:.45}}
+.ld-scene{position:relative;width:190px;height:150px;border-bottom:10px solid #4a8a3a;border-radius:3px;box-shadow:0 6px 0 #2a5a24}
+.ld-stack{position:absolute;left:24px;bottom:0;width:64px}
+.ld-stack i,.ld-carry{position:absolute;left:0;width:64px;height:24px;border-radius:3px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.25)}
+.ld-stack i::before,.ld-stack i::after,.ld-carry::before,.ld-carry::after{content:"";position:absolute;top:-7px;width:18px;height:7px;border-radius:3px 3px 0 0;background:inherit;box-shadow:inset 0 2px 0 rgba(255,255,255,.25)}
+.ld-stack i::before,.ld-carry::before{left:9px} .ld-stack i::after,.ld-carry::after{right:9px}
+.ld-stack .b1{bottom:0;background:#c8201c} .ld-stack .b2{bottom:24px;background:#f2c21a} .ld-stack .b3{bottom:48px;background:#2a6ac8} .ld-stack .b4{bottom:72px;background:#3a9a4a}
+.ld-stack i{animation:ldPlace 4s steps(1) infinite}
+.ld-stack .b1{animation-name:none} .ld-stack .b2{animation-delay:-3s} .ld-stack .b3{animation-delay:-2s} .ld-stack .b4{animation-delay:-1s}
+@keyframes ldPlace{0%,24%{opacity:0}25%,100%{opacity:1}}
+.ld-stack .b2{animation:ldP2 4s steps(1) infinite} .ld-stack .b3{animation:ldP3 4s steps(1) infinite} .ld-stack .b4{animation:ldP4 4s steps(1) infinite}
+@keyframes ldP2{0%,24%{opacity:0}25%,100%{opacity:1}} @keyframes ldP3{0%,49%{opacity:0}50%,100%{opacity:1}} @keyframes ldP4{0%,74%{opacity:0}75%,99%{opacity:1}100%{opacity:0}}
+.ld-fig{position:absolute;right:26px;bottom:0;width:40px;height:92px;animation:ldWalk 1s ease-in-out infinite alternate}
+.ld-fig b{position:absolute;display:block}
+.ld-fig .hd{left:9px;top:6px;width:22px;height:22px;border-radius:6px;background:#f2c21a;box-shadow:inset -3px -3px 0 rgba(0,0,0,.15)}
+.ld-fig .hm{left:5px;top:0;width:30px;height:13px;border-radius:15px 15px 3px 3px;background:#5d6b3a}
+.ld-fig .tr{left:4px;top:28px;width:32px;height:32px;border-radius:4px 4px 2px 2px;background:#6b7062;clip-path:polygon(12% 0,88% 0,100% 100%,0 100%)}
+.ld-fig .lg{left:5px;top:60px;width:30px;height:32px;background:linear-gradient(90deg,#4f5449 47%,#2a2c26 47% 53%,#4f5449 53%);border-radius:2px}
+.ld-fig .ar{left:-8px;top:32px;width:12px;height:26px;border-radius:6px;background:#6b7062;transform-origin:50% 0;animation:ldArm 1s ease-in-out infinite alternate}
+@keyframes ldArm{from{transform:rotate(10deg)}to{transform:rotate(80deg)}}
+@keyframes ldWalk{from{transform:translateX(0)}to{transform:translateX(-14px)}}
+.ld-carry{left:auto;right:62px;bottom:112px;width:40px;background:#e0e0d8;animation:ldCarry 1s ease-in-out infinite alternate}
+.ld-carry::before{left:3px} .ld-carry::after{right:3px}
+@keyframes ldCarry{from{transform:translate(0,30px) rotate(-6deg)}to{transform:translate(-24px,-4px) rotate(4deg)}}
+@media (prefers-reduced-motion:reduce){ #loader *{animation:none!important} }
+
+/* Feld-Popup: drehendes 3D-Modell statt Emoji */
+.fi-head.fi-3d{justify-content:center;margin:0 0 8px;min-height:120px}
+.fi-head.fi-3d img.fig{width:auto!important;height:150px!important;max-width:100%}
+.fi-head.fi-3d canvas.fi3d{display:block;max-width:100%}
