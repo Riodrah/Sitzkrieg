@@ -18,7 +18,7 @@ const RULES={
   "wohn": {"name": "Wohnhaus", "regel": "Das Gebäude gibt Deckung und blockiert die Sichtlinie."},
   "graben": {"name": "Graben", "regel": "Unwegsames Gelände (halbe Bewegung). Gibt Deckung."},
   "hafen": {"name": "Hafen", "regel": "Wasser ist unpassierbar. Die Kisten geben Deckung."},
-  "see": {"name": "See", "regel": "Wasser ist unpassierbar."},
+  "see": {"name": "See", "regel": "Unwegsames Gelände (halbe Bewegung)."},
   "strasse": {"name": "Leere Straße", "regel": ""},
   "ruine": {"name": "Ruine", "regel": "Unwegsames Gelände (halbe Bewegung). Gibt Deckung."},
   "kirche": {"name": "Kirche", "regel": "Die Kirche gibt Deckung und blockiert die Sichtlinie. Der Kirchturm ist eine erhöhte Position."}
