@@ -171,7 +171,7 @@ function build() {
     t.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });
     const oi = ms ? ms.objectives.indexOf(x) : -1, ex = ms && ms.exts ? ms.exts.find(e => e.p === x) : null;
     if (oi >= 0) { const f = flag(g, .02); f.scale.setScalar(1.35); S3.flags.push(f); const o = ms.objInfo[oi];
-      const tg = tag('⚑ ' + (o.flex ? o.name : 'Ziel'), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
+      const tg = tag('⚑ ' + (o.flex ? o.name : (x.p.name || 'Ziel')), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
       if (o.flex && o.name === 'Artilleriegeschütz') {   // Batterie: drei Geschütze versetzt wie im echten Aufbau, zielen zur Kartenmitte
         const bat = G(); bat.position.set(-.15, .02, .1); bat.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(bat);
         for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } }
