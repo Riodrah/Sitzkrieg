@@ -333,6 +333,7 @@ function soldier(side, kind = 'rif', opt = {}) {
   }
   gripWeapon(g, u, kind);
   if (kind === 'general' && opt.abil) generalGear(g, u, body, side, opt.abil);
+  body.scale.x = -1;   // seitlich gespiegelt: Waffe liegt in der rechten Hand der Figur (sie schaut nach +z, ihre Rechte ist -x)
   shadow(g, .42); u.type = 'inf';
   return g;
 }
@@ -439,6 +440,7 @@ function modern() {
   u.armR = arm(body, 1, ARM, -1.1, 0); u.armL = arm(body, -1, ARM, -.6);
   const w = carbine(); w.rotation.set(-.05, -.25, 0); body.add(w); u.weapon = w; u.body = body; gripWeapon(g, u, 'modern');
   const kn = G(); P(kn, RB(.04, .1, .05, .01), 0x1d1d1d, 0, -.02, 0); P(kn, RB(.015, .24, .05, .006), 0x2a2a2a, 0, .15, .01); kn.rotation.set(-1.2, 0, 0); u.armL.userData.hand.add(kn);
+  body.scale.x = -1; fl.scale.x *= -1;   // Waffe in der rechten Hand; Flaggen-Patch dabei nicht spiegeln
   shadow(g, .42); u.type = 'inf';
   return g;
 }
