@@ -64,6 +64,81 @@ export function oldCar(p, x, z, ry, s = .45) {
   c.traverse(o => { if (o.isMesh) o.castShadow = true; });
   return c;
 }
+// Kutsche wie im echten Aufbau: brauner Wagen mit Wänden aus runden 1x1-Steinen (Noppen oben), sandfarbener Boden,
+// vier goldene Speichenräder, graue Deichsel
+export function cart(p, x, z, ry, s = .45) {
+  const c = G(); c.position.set(x, 0, z); c.rotation.y = ry; c.scale.setScalar(s); p.add(c);
+  const BR = 0x6a3a18, GO = 0xb89a2c, M = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, plastic(col)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; c.add(m); return m; };
+  for (const wx of [-.42, .42]) for (const sz of [-1, 1]) {
+    const w = G(); w.position.set(wx, .32, sz * .44); c.add(w);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.3, .03, 8, 32), plastic(GO)); rim.castShadow = true; w.add(rim);
+    const hub = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .1, 14), plastic(GO)); hub.rotation.x = HALF; w.add(hub);
+    for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2, sp = new THREE.Mesh(new THREE.BoxGeometry(.025, .26, .025), plastic(GO)); sp.position.set(Math.cos(a) * .15, Math.sin(a) * .15, 0); sp.rotation.z = a - HALF; w.add(sp); }
+    for (let k = 0; k < 10; k++) { const a = k / 10 * Math.PI * 2, n = new THREE.Mesh(new THREE.SphereGeometry(.012, 6, 4), plastic(GO)); n.position.set(Math.cos(a) * .3, Math.sin(a) * .3, sz * .03); w.add(n); }   // Nieten am Reifen
+  }
+  M(new THREE.CylinderGeometry(.03, .03, .96, 8), 0x5a3a22, -.42, .32, 0, HALF); M(new THREE.CylinderGeometry(.03, .03, .96, 8), 0x5a3a22, .42, .32, 0, HALF);   // Achsen
+  brick(c, 1.24, .06, .64, 0xd9c08a, 0, .42, 0, { studs: false });                                // Boden
+  const log = new THREE.CylinderGeometry(.085, .085, .3, 16), stud = new THREE.CylinderGeometry(.05, .05, .04, 12);
+  const post = (x, z) => { M(log, BR, x, .6, z); M(stud, BR, x, .77, z); };
+  for (let i = 0; i < 7; i++) for (const sz of [-1, 1]) post(-.54 + i * .18, sz * .26);            // Seitenwände
+  for (const sx of [-1, 1]) for (const z of [-.09, .09]) post(sx * .6, z);                          // Stirnwände
+  for (const sz of [-1, 1]) for (const sx of [-1, 1]) M(new THREE.CylinderGeometry(.04, .04, .06, 10), BR, sx * .66, .72, sz * .2, 0, 0, HALF);   // Ösen
+  for (const sz of [-1, 1]) M(new THREE.BoxGeometry(.6, .05, .05), LGRC, .95, .38, sz * .13, 0, sz * .2, 0);   // Deichsel (Dreieck)
+  M(new THREE.BoxGeometry(.3, .05, .05), LGRC, .85, .38, 0, 0, HALF, 0);
+  M(new THREE.CylinderGeometry(.05, .05, .14, 12), LGRC, 1.26, .38, 0, 0, 0, HALF);
+  return c;
+}
+const LGRC = 0xa3a8ab;
+// Flugzeugwrack wie im echten Aufbau: Sturzkampfbomber in Sand/Grün-Tarnung, zerbrochen in Nase, Mittelteil mit Kanzel, Heck,
+// ein Flügel schräg aufgestellt, der zweite abgebrochen am Boden, Bombe, Fahrwerksverkleidung, lose Steine.
+// Dazu Rauch aus runden grauen 1x1-Steinen (wie beim Feuer-Bildschirm), der auf der Karte langsam aufsteigt.
+export function wreck(p, x, z, ry, s = .3, smokes = null) {
+  const w = G(); w.position.set(x, 0, z); w.rotation.y = ry; w.scale.setScalar(s); p.add(w);
+  const SA = 0xc9b77c, GR = 0x6b7d4e, M = (par, geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, typeof col === 'number' ? plastic(col) : col); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); m.castShadow = true; par.add(m); return m; };
+  const BX = (a, b, c) => new THREE.BoxGeometry(a, b, c);
+  const camo = (par, L, D, y, pats) => { for (const [px, pz, pw, pd] of pats) M(par, BX(pw * L, .012, pd * D), GR, px * L, y, pz * D); };
+  // 1) Flügel schräg aufgestellt, mit Balkenkreuz
+  const wa = G(); wa.position.set(-.3, .55, -.9); wa.rotation.set(-.55, .5, 0); w.add(wa);
+  M(wa, BX(1.0, .1, 2.2), SA, 0, 0, 0); camo(wa, 1.0, 2.2, .056, [[-.2, .3, .5, .25], [.25, -.1, .45, .3], [-.15, -.35, .6, .2], [.2, .4, .4, .15]]);
+  insignia(wa, 'de', .5, 0, .065, .55, 0, -HALF);
+  // 2) Mittelteil mit Glaskanzel
+  const mid = G(); mid.position.set(.1, .22, 0); mid.rotation.set(.08, .5, .05); w.add(mid);
+  M(mid, BX(1.1, .4, .42), SA, 0, 0, 0); M(mid, BX(.5, .41, .43), GR, .25, 0, 0);
+  const can = M(mid, new THREE.CapsuleGeometry(.16, .6, 6, 14), new THREE.MeshPhysicalMaterial({ color: 0xe6f0f2, roughness: .05, transmission: .7, transparent: true, opacity: .5, clearcoat: 1 }), 0, .24, 0, 0, 0, HALF);
+  for (let i = 0; i < 5; i++) M(mid, new THREE.TorusGeometry(.165, .012, 4, 16, Math.PI), SA, -.3 + i * .15, .24, 0, 0, HALF, 0);
+  M(mid, new THREE.CylinderGeometry(.015, .015, .3, 6), 0x1b1b1b, -.45, .38, 0, 0, 0, -.6);   // MG des Bordschützen
+  // 3) Nase abgerissen, mit Spinner und Propeller
+  const nose = G(); nose.position.set(1.05, .2, .35); nose.rotation.set(0, .9, .15); w.add(nose);
+  M(nose, BX(.8, .38, .4), SA, 0, 0, 0); M(nose, BX(.35, .385, .405), GR, -.15, 0, 0); M(nose, BX(.5, .1, .38), 0xe8e6e0, .05, -.2, 0);
+  M(nose, new THREE.ConeGeometry(.15, .3, 18), 0xd23a14, .55, 0, 0, 0, 0, -HALF);
+  for (let i = 0; i < 3; i++) { const a = i * Math.PI * 2 / 3 + .3, bl = G(); bl.position.set(.45, 0, 0); bl.rotation.x = a; nose.add(bl); M(bl, BX(.03, .7, .12), 0x1b1b1b, 0, .38, 0); }
+  for (let i = 0; i < 5; i++) M(nose, new THREE.CylinderGeometry(.025, .025, .05, 8), 0x8a4f22, -.15 + i * .08, .02, .21, HALF);
+  // 4) Heck abgeknickt mit Leitwerk
+  const tail = G(); tail.position.set(-1.05, .14, -.25); tail.rotation.set(.05, -.35, -.06); w.add(tail);
+  M(tail, BX(1.2, .24, .24), SA, 0, 0, 0); M(tail, BX(.4, .245, .245), GR, -.1, 0, 0); M(tail, BX(.12, .25, .25), 0xf4f4f0, .3, 0, 0);
+  M(tail, BX(.4, .5, .04), SA, -.5, .3, 0, 0, 0, .2); M(tail, BX(.15, .3, .045), GR, -.55, .35, 0);
+  M(tail, BX(.35, .04, 1.1), SA, -.48, .08, 0); camo(tail, .35, 1.1, .1, [[0, .3, .6, .25], [0, -.3, .6, .2]]);
+  // 5) zweiter Flügel abgebrochen am Boden
+  const wb = G(); wb.position.set(.35, .05, 1.05); wb.rotation.set(0, -.15, .04); w.add(wb);
+  M(wb, BX(1.6, .08, .75), SA, 0, 0, 0); camo(wb, 1.6, .75, .046, [[-.3, 0, .3, .9], [.15, .2, .25, .5], [.35, -.2, .2, .5]]);
+  insignia(wb, 'de', .42, .45, .05, 0, 0, -HALF);
+  // 6) Bombe, Fahrwerk, lose Steine
+  M(w, new THREE.CapsuleGeometry(.08, .3, 6, 12), 0x1b1b1b, .55, .08, -.45, 0, .4, HALF);
+  const gear = G(); gear.position.set(.95, 0, 1.1); gear.rotation.y = .6; w.add(gear);
+  M(gear, new THREE.CapsuleGeometry(.1, .25, 6, 12), SA, 0, .16, 0, 0, 0, HALF).scale.set(1, 1, .6);
+  M(gear, new THREE.CylinderGeometry(.1, .1, .06, 16), 0x1b1b1b, .05, .1, .07, HALF); M(gear, new THREE.CylinderGeometry(.05, .05, .07, 12), LGRC, .05, .1, .07, HALF);
+  for (const [bx, bz, c] of [[-.4, .75, SA], [.85, -.6, GR], [-1.4, .5, SA], [-.1, -1.5, GR]]) brick(w, .2, .06, .14, c, bx, .03, bz, { rot: [0, R() * 3, 0] });
+  // 7) Rauch aus runden 1x1-Steinen über der Bruchstelle
+  const puffGeo = new THREE.CylinderGeometry(.11, .11, .1, 18), studGeo = new THREE.CylinderGeometry(.06, .06, .05, 14);
+  for (let i = 0; i < 14; i++) {
+    const c = [0x8a8f94, 0xa6abaf, 0x5b6066, 0xc8ccce][i % 4], m = G();
+    m.add(new THREE.Mesh(puffGeo, plastic(c))); const st = new THREE.Mesh(studGeo, plastic(c)); st.position.y = .075; m.add(st); w.add(m);
+    const pf = { m, ph: i / 14, x0: .55 + (R() - .5) * .2, z0: .2 + (R() - .5) * .2, wob: R() * 6 };
+    const k = pf.ph; m.position.set(pf.x0, .35 + k * 1.6, pf.z0); m.scale.setScalar(.7 + k * 1.1);
+    if (smokes) smokes.push(pf);
+  }
+  return w;
+}
 // Abtrünnige wie im echten Aufbau: zwei sandfarbene Platten auf einem Feld, links in Ruhestellung (Gewehr gesenkt), rechts im Anschlag
 function renegade(p, x, z, aim) {
   const f = buildUnit('rif', 'al'); f.scale.setScalar(.17); f.position.set(x, .03, z); p.add(f);
@@ -88,8 +163,8 @@ function extProp(g, name) {
   if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
   else if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
   else if (/Jeep/.test(name)) { brick(e, .6, .2, .32, /Jeep/.test(name) ? 0x5f6b3a : 0x2a3a5a, 0, .2, 0); brick(e, .3, .14, .3, 0x9fd2ea, -.05, .37, 0, { studs: false }); for (const x of [-.2, .2]) for (const z of [-.17, .17]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 14), plastic(0x1b1b1b)); w.rotation.x = HALF; w.position.set(x, .08, z); e.add(w); } }
-  else if (/Flugzeug/.test(name)) { brick(e, .7, .18, .2, 0x7a7a72, 0, .1, 0, { rot: [0, .3, .15] }); brick(e, .2, .05, .7, 0x6a6a62, .05, .1, 0, { rot: [0, .3, -.2] }); }
-  else if (/Kutsche/.test(name)) { brick(e, .5, .25, .32, 0x6b4a2a, 0, .2, 0); for (const x of [-.2, .2]) { const w = new THREE.Mesh(new THREE.TorusGeometry(.1, .02, 6, 14), plastic(0x3a2a1a)); w.position.set(x, .1, .17); e.add(w); } }
+  else if (/Flugzeug/.test(name)) wreck(e, .4, -.35, .3, .32, S3 && S3.smokes);
+  else if (/Kutsche/.test(name)) cart(e, .3, -.1, .35);
   else { for (let i = 0; i < 4; i++) sandbag(e, i * .17, .07, 0); }
   return e;
 }
@@ -118,7 +193,7 @@ function setup(box) {
   const cam = new THREE.PerspectiveCamera(35, 1, 1, 120);   // größeres near = genauere Tiefe (weniger Flackern am Handy)
   const ctl = new OrbitControls(cam, r.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = 1.35; ctl.minDistance = 4; ctl.maxDistance = 40; ctl.enablePan = true;
   ctl.addEventListener('change', () => S3 && (S3.dirty = true));
-  S3 = { r, scene, cam, ctl, box, board: null, dirty: true, flags: [] };
+  S3 = { r, scene, cam, ctl, box, board: null, dirty: true, flags: [], smokes: [] };
   // Antippen = Feld-Info (nur wenn nicht gezogen wurde)
   let down = null;
   // Erst beim echten Klick öffnen: bei 'pointerup' würde am Handy der nachfolgende Klick das Fenster gleich wieder schließen
@@ -136,6 +211,7 @@ function setup(box) {
   });
   new ResizeObserver(resize).observe(box); resize();
   (function loop() { requestAnimationFrame(loop); if (!S3 || box.offsetParent === null || document.hidden) return; const t = performance.now() / 1000; ctl.update();
+    for (const pf of S3.smokes) { const k = (t * .22 + pf.ph) % 1; pf.m.position.set(pf.x0 + Math.sin(t * .8 + pf.wob) * .12 * k, .35 + k * 1.6, pf.z0 + k * .15); pf.m.scale.setScalar(.7 + k * 1.1); S3.dirty = true; }   // Rauch steigt auf
     for (const f of S3.flags) { const p = f.userData.cloth.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) + .25; p.setZ(i, Math.sin(t * 5 + x * 9) * .05 * x * 2); } p.needsUpdate = true; S3.dirty = true; }
     if (S3.dirty) { r.render(scene, cam); S3.dirty = false; } })();
 }
@@ -146,7 +222,7 @@ function build() {
   const box = document.getElementById('map3d'); if (!box) return;
   if (!S3) setup(box);
   if (S3.board) { S3.scene.remove(S3.board); S3.board.traverse(o => { if (o.geometry && !o.geometry.parameters?.cached) o.geometry.dispose?.(); }); }
-  S3.flags = [];
+  S3.flags = []; S3.smokes = [];
   const board = G(); S3.board = board; S3.scene.add(board);
   const port = typeof isPortrait === 'function' ? isPortrait() : box.clientHeight > box.clientWidth;   // gleiche Drehung wie die 2D-Karte
   box.classList.toggle('quer', !port); resize();
@@ -176,6 +252,7 @@ function build() {
         const bat = G(); bat.position.set(-.15, .02, .1); bat.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(bat);
         for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } }
       if (o.flex && o.name === 'Flakgeschütz') { const fl = buildUnit('flak', 'de'); fl.scale.setScalar(.3); fl.position.set(-.2, .02, .2); fl.rotation.y = .6; g.add(fl); }
+      if (o.flex && o.name === 'Transporter') { const tr = buildUnit('trans', 'de'); tr.scale.setScalar(.27); tr.position.set(-.15, .02, .2); tr.rotation.y = .5; g.add(tr); }
       if (o.flex && o.name === 'Kampfflieger') { const pl = buildUnit('flieger', 'al'); pl.userData.body.position.y = .74; pl.scale.setScalar(.27); pl.position.set(-.15, .02, .15); pl.rotation.y = .5; g.add(pl); } }
     if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#e2b33a', '#1b1b14'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;

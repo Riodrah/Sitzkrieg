@@ -538,19 +538,42 @@ function tankDetails(hull, tur, br, side, heavy, L, Wd, r, hy, c, u) {
     if (heavy) for (const sz of [-1, 1]) for (let i = 0; i < 3; i++) P(hull, RB(.32, .14, .06, .02), MT, -L * .33 + i * L * .33, r * 1.55, sz * (Wd + .22));   // Laufwerksträger (VVSS)
   }
 }
+// Transporter nach Foto (offene Zugmaschine mit Halbketten im Klemmbaustein-Stil): sandfarben, lange Motorhaube mit Lüftungsschlitzen,
+// Kotflügel über den Vorderrädern, schräge Windschutzscheibe, drei schwarze Sitzbänke, Kasten mit Gepäckgitter hinten, Speichen-Laufrollen
 function halftrack(side) {
-  const g = G(), c = COL[side], u = g.userData, b = G(); g.add(b); u.body = b;
-  for (const s of [-1, 1]) { trackUnit(b, 1.6, s * .78, .2, 3, side).position.x = -.55; wheel(b, .28, .18, 1.3, .28, s * .8); }
-  brick(b, 3.0, .25, 1.6, c.veh, 0, .62, 0, { studs: false });
-  brick(b, .9, .45, 1.2, c.veh, 1.25, .97, 0); slope(b, .5, .35, 1.15, c.veh, 1.5, 1.32, 0, Math.PI);
-  P(b, RB(.06, .4, 1.4, .02), 0x2f3a40, .78, 1.38, 0, 0, 0, -.25);
-  for (const s of [-1, 1]) brick(b, 2.0, .5, .1, c.veh, -.45, 1.0, s * .76, { studs: true });
-  brick(b, .1, .5, 1.6, c.veh, -1.45, 1.0, 0);
-  for (const s of [-1, 1]) P(b, CY(.09, .09, .04, 18), 0xfff2b0, 1.71, 1.0, s * .42, 0, 0, HALF);
-  const w = mgun(); w.position.set(.55, 1.55, 0); w.rotation.y = HALF; b.add(w); u.weapon = w;
-  for (let i = 0; i < 3; i++) { const f = soldier(side, 'rif'); f.remove(f.userData.shadow); f.scale.setScalar(.62); f.position.set(-1.05 + i * .5, .75, i % 2 ? -.3 : .3); f.rotation.y = HALF; f.userData.weapon.visible = false; b.add(f); }
-  insignia(b, side, .4, -.45, 1.0, .811 + .001);
-  shadow(g, 1.7); u.type = 'veh'; u.exhaust = new THREE.Vector3(-1.6, .8, -.6);
+  const g = G(), u = g.userData, b = G(); g.add(b); u.body = b;
+  const S = side === 'de' ? 0xc9b781 : COL[side].veh, S2 = side === 'de' ? 0xb3a26c : COL[side].veh2;
+  for (const s of [-1, 1]) {
+    trackUnit(b, 2.1, s * .68, .2, 4, side).position.x = -.5;
+    for (let i = 0; i < 4; i++) { const wx = -1.3 + i * .48, wz = s * (.84 + (i % 2) * .06), wg = G(); wg.position.set(wx, .26, wz); b.add(wg);   // versetzte Laufrollen mit Speichen
+      P(wg, CY(.22, .22, .06, 24), S, 0, 0, 0, HALF, 0, 0); P(wg, CY(.06, .06, .08, 12), S2, 0, 0, 0, HALF, 0, 0);
+      for (let k = 0; k < 8; k++) { const a = k / 8 * Math.PI * 2; P(wg, RB(.025, .14, .02, .005), S2, Math.cos(a) * .1, Math.sin(a) * .1, s * .035, 0, 0, a + HALF); } }
+    P(b, CY(.2, .2, .1, 12), S, .45, .3, s * .78, HALF, 0, 0);                                        // Antriebsrad
+    brickTire(b, .3, .18, 1.35, .3, s * .7); fender(b, .32, .22, 1.35, .3, s * .7, S, 1.15);         // Vorderrad + Kotflügel
+    fender(b, .26, .2, -1.55, .3, s * .7, S, .6).rotation.z = .7;                                    // Heckschürze
+  }
+  brick(b, 3.3, .16, 1.36, S, -.05, .56, 0, { studs: false });                                     // Wanne
+  brick(b, .95, .42, 1.0, S, 1.25, .85, 0, { studs: false });                                      // Motorhaube
+  slope(b, .4, .2, 1.0, S, 1.55, 1.16, 0, Math.PI); brick(b, .55, .1, 1.0, S, 1.08, 1.11, 0, { studs: false });
+  for (const s of [-1, 1]) for (let i = 0; i < 12; i++) P(b, RB(.018, .26, .01, .004), 0x3a3424, .95 + i * .05, .84, s * .505);   // Lüftungsschlitze
+  brick(b, .06, .3, .9, S2, 1.74, .78, 0, { studs: false });                                       // Kühlerfront
+  for (const s of [-1, 1]) P(b, CY(.07, .07, .06, 16), 0xfff2b0, 1.76, .98, s * .38, 0, 0, HALF);   // Scheinwerfer
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xdfeef2, roughness: .05, transmission: .7, transparent: true, opacity: .45, clearcoat: 1 });
+  P(b, RB(.03, .52, 1.0, .01), glass, .66, 1.3, 0, 0, 0, .25);                                     // Windschutzscheibe
+  for (const s of [-1, 1]) P(b, RB(.05, .55, .05, .01), S2, .66, 1.3, s * .5, 0, 0, .25);
+  for (const s of [-1, 1]) brick(b, 2.0, .14, .12, S, -.45, .7, s * .62);                          // Seitenleisten mit Noppen
+  for (const x of [.3, -.25, -.8]) {                                                                // drei schwarze Sitzbänke
+    brick(b, .3, .1, 1.0, 0x1b1b1b, x, .7, 0, { studs: false }); brick(b, .07, .26, 1.0, 0x1b1b1b, x - .15, .85, 0, { studs: false });
+    for (const s of [-1, 1]) brick(b, .3, .22, .14, S, x, .8, s * .58, { studs: false });
+  }
+  brick(b, .6, .5, 1.36, S, -1.4, .89, 0, { studs: false });                                       // Kasten hinten
+  brick(b, .56, .05, 1.3, S2, -1.4, 1.16, 0, { studs: false });
+  for (const [dx, dz, w, d] of [[0, .6, .56, .05], [0, -.6, .56, .05], [.26, 0, .05, 1.2], [-.26, 0, .05, 1.2]]) brick(b, w, .07, d, S, -1.4 + dx, 1.22, dz, { studs: false });   // Gepäckgitter
+  for (let i = 0; i < 5; i++) for (const s of [-1, 1]) P(b, CY(.015, .015, .07, 6), S, -1.62 + i * .11, 1.27, s * .6);
+  const w = mgun(); w.scale.setScalar(.8); w.position.set(-1.25, 1.42, 0); w.rotation.y = HALF; b.add(w); u.weapon = w;
+  for (let i = 0; i < 3; i++) { const f = soldier(side, 'rif'); f.remove(f.userData.shadow); f.scale.setScalar(.55); f.position.set(.3 - i * .55, .6, i % 2 ? -.25 : .25); f.rotation.y = HALF; f.userData.weapon.visible = false; b.add(f); }
+  insignia(b, side, .34, -1.4, .9, .685);
+  shadow(g, 1.7); u.type = 'veh'; u.exhaust = new THREE.Vector3(-1.7, .6, -.6);
   return g;
 }
 // Kraftrad mit Beiwagen (nach Foto der echten Klemmbaustein-Version): Schutzbleche, Speichenräder, Scheinwerfer, Gepäckgitter, Ersatzrad, MG am Beiwagen
