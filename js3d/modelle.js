@@ -556,6 +556,68 @@ function tankDetails(hull, tur, br, side, heavy, L, Wd, r, hy, c, u) {
     if (heavy) for (const sz of [-1, 1]) for (let i = 0; i < 3; i++) P(hull, RB(.32, .14, .06, .02), MT, -L * .33 + i * L * .33, r * 1.55, sz * (Wd + .22));   // Laufwerksträger (VVSS)
   }
 }
+// Schwerer Panzer der Alliierten nach Foto (Churchill im Klemmbaustein-Stil): dunkelgrün, graue Ketten laufen ganz um den Rumpf,
+// viele kleine Laufrollen, Seitenkästen mit Schlammrinne, Luke und weiß-rot-weißem Streifen, kantiger Turm mit gelbem Quadrat
+function churchill(side) {
+  const g = G(), u = g.userData, hull = G(); g.add(hull); u.body = hull;
+  const DG = 0x173d29, DG2 = 0x10301f, TR = 0x5a5e66, TR2 = 0x43474e, K = 0x161616, BRN = 0x86602a, TANS = 0xd9c9a0, GRY = 0x8a8c84, YEL = 0xa8843a;
+  const L = 3.3, TZ = .8, TW = .34, TH = .95;
+  const decal = (w, h, draw) => { const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.MeshStandardMaterial({ map: t, transparent: true, roughness: .5, polygonOffset: true, polygonOffsetFactor: -2 }); };
+  const flash = decal(96, 96, (x, w, h) => { x.fillStyle = '#f4f4f0'; x.fillRect(0, 0, w, h); x.fillStyle = '#c0281c'; x.fillRect(w / 3, 0, w / 3, h); });
+  const square = decal(96, 96, (x, w, h) => { x.strokeStyle = '#f0d020'; x.lineWidth = 10; x.strokeRect(10, 10, w - 20, h - 20); x.strokeStyle = '#111'; x.lineWidth = 2; x.strokeRect(4, 4, w - 8, h - 8); x.strokeRect(17, 17, w - 34, h - 34); });
+  const rr = (sh, x0, y0, x1, y1, r) => { sh.moveTo(x0 + r, y0); sh.lineTo(x1 - r, y0); sh.absarc(x1 - r, y0 + r, r, -HALF, 0, false); sh.lineTo(x1, y1 - r); sh.absarc(x1 - r, y1 - r, r, 0, HALF, false); sh.lineTo(x0 + r, y1); sh.absarc(x0 + r, y1 - r, r, HALF, Math.PI, false); sh.lineTo(x0, y0 + r); sh.absarc(x0 + r, y0 + r, r, Math.PI, Math.PI * 1.5, false); };
+  const ring = cached('chTrack', () => { const sh = new THREE.Shape(); rr(sh, -L / 2, 0, L / 2, TH, .36); const ho = new THREE.Path(); rr(ho, -L / 2 + .07, .07, L / 2 - .07, TH - .07, .3); sh.holes.push(ho);
+    const e = new THREE.ExtrudeGeometry(sh, { depth: TW, bevelEnabled: false, curveSegments: 14 }); e.translate(0, 0, -TW / 2); return e; });
+  for (const s of [-1, 1]) {
+    const t = G(); t.position.z = s * TZ; hull.add(t);
+    P(t, ring, TR);                                                                            // Kette rundum
+    for (let i = 0; i < 30; i++) P(t, RB(.05, .03, TW + .02, .006), TR2, -L / 2 + .4 + i * (L - .8) / 29, TH + .005, 0);   // Stollen oben
+    for (let i = 0; i < 30; i++) P(t, RB(.05, .03, TW + .02, .006), TR2, -L / 2 + .4 + i * (L - .8) / 29, -.005, 0);       // Stollen unten
+    for (let i = 0; i < 11; i++) { const w = G(); w.position.set(-1.25 + i * .25, .14, s * (TW / 2 - .02)); t.add(w);    // kleine Laufrollen
+      P(w, CY(.11, .11, .06, 20), DG, 0, 0, 0, HALF, 0, 0); P(w, CY(.05, .05, .07, 14), DG2, 0, 0, 0, HALF, 0, 0); P(w, CY(.02, .02, .075, 8), K, 0, 0, 0, HALF, 0, 0); }
+    for (const ex of [-1, 1]) { P(t, CY(.24, .24, TW - .06, 22), DG, ex * (L / 2 - .36), .36, 0, HALF, 0, 0); P(t, CY(.1, .1, TW - .04, 14), DG2, ex * (L / 2 - .36), .36, 0, HALF, 0, 0); }   // Antriebs- und Leitrad
+    // Seitenkasten außen über dem Laufwerk: Platte, helle Schlammrinne, Luke, Erkennungsstreifen
+    const pz = s * (TZ + TW / 2 + .03);
+    P(t.parent, RB(L - .9, .5, .06, .02), DG, -.05, .52, pz);
+    P(t.parent, RB(.55, .08, .065, .01), GRY, -.45, .66, pz);
+    P(t.parent, RB(.42, .3, .065, .02), DG2, .2, .5, pz).scale.set(1, 1, .98);
+    P(t.parent, RB(.36, .24, .07, .02), DG, .2, .5, pz);
+    P(t.parent, RB(.06, .5, .065, .02), DG, L / 2 - .5, .52, pz, 0, 0, -.45);                 // schräge Front des Seitenkastens
+    const m = new THREE.Mesh(cached('pl', () => new THREE.PlaneGeometry(1, 1)), flash); m.scale.set(.24, .22, 1); m.position.set(.95, .5, pz + s * .036); m.rotation.y = s > 0 ? 0 : Math.PI; hull.add(m);
+    for (let i = 0; i < 3; i++) P(t.parent, RB(.3, .015, .01, .004), K, -.8 + i * .35, .4, pz + s * .035);
+  }
+  // Rumpf zwischen den Ketten
+  brick(hull, L - .3, .7, 1.24, DG, -.05, .58, 0, { studs: false });
+  P(hull, RB(.3, .5, 1.1, .05), DG, L / 2 - .3, .5, 0, 0, 0, -.25);                         // Bugplatte
+  P(hull, SP(.07), DG2, L / 2 - .22, .66, .3); P(hull, CY(.018, .018, .28, 8), K, L / 2 - .08, .66, .3, 0, 0, HALF);   // Bug-MG
+  P(hull, RB(.05, .2, .2, .02), DG, L / 2 - .1, .3, -.3);
+  // Heck: Holzkiste, Sandsack, Kanister, Abschleppösen, Gitter
+  const dy = .93;
+  const bx = G(); bx.position.set(-L / 2 + .55, dy + .1, -.3); hull.add(bx); brick(bx, .34, .18, .55, BRN, 0, 0, 0, { studs: false });
+  for (const zz of [-.15, .15]) P(bx, RB(.35, .02, .03, .005), 0x6e4a1c, 0, .09, zz); P(bx, RB(.03, .19, .56, .005), 0x6e4a1c, .06, 0, 0);
+  P(hull, cached('sbag', () => new THREE.CapsuleGeometry(.1, .24, 6, 12)), TANS, -L / 2 + .3, dy + .08, .3, 0, .2, HALF).scale.set(1, .6, 1.2);
+  P(hull, RB(.26, .26, .1, .02), GRY, -L / 2 + .62, dy + .13, .28, -HALF, 0, 0);
+  for (let i = 0; i < 5; i++) P(hull, RB(.5, .015, .03, .005), K, -.65, dy + .01, -.36 + i * .18);
+  for (const s of [-1, 1]) P(hull, TO(.06, .018), DG, -L / 2 + .02, .8, s * .5, 0, HALF, 0);
+  // Turm: kantig, oben abgeschrägt, kurze Kanone mit Koax-MG, Kuppel, Luke, Antenne, Zylinder hinten, gelbes Quadrat
+  const tur = G(); tur.position.set(.3, dy, 0); hull.add(tur); u.turret = tur;
+  brick(tur, 1.05, .38, .95, DG, 0, .19, 0, { studs: false });
+  brick(tur, .95, .12, .8, DG, -.02, .44, 0, { studs: false });                               // abgesetztes Turmdach
+  for (const s of [-1, 1]) P(tur, RB(.95, .03, .04, .01), DG2, -.02, .385, s * .4);
+  brick(tur, .2, .3, .7, DG2, .6, .2, 0, { studs: false });                                    // Blende
+  for (const s of [-1, 1]) { const sq = new THREE.Mesh(cached('pl', () => new THREE.PlaneGeometry(1, 1)), square); sq.scale.setScalar(.2); sq.position.set(.05, .2, s * .476); sq.rotation.y = s > 0 ? 0 : Math.PI; tur.add(sq); }
+  P(tur, CY(.14, .16, .1, 22), DG, -.15, .55, -.18); P(tur, CY(.12, .12, .03, 22), DG2, -.15, .61, -.18);
+  P(tur, RB(.28, .05, .22, .02), DG, .15, .53, .2); P(tur, CY(.03, .03, .1, 8), DG, .3, .58, .2);
+  P(tur, CY(.008, .014, 1.2, 6), K, -.42, 1.08, .32); P(tur, CY(.035, .035, .08, 10), DG, -.42, .52, .32);
+  P(tur, CY(.06, .06, .3, 14), YEL, -.4, .26, .53); P(tur, RB(.12, .04, .06, .01), DG, -.4, .1, .5);   // Zylinder hinten an der Seite
+  const br = G(); br.position.set(.7, .22, 0); tur.add(br);
+  P(br, CY(.07, .07, .14, 16), DG, .05, 0, 0, 0, 0, HALF); P(br, CY(.045, .05, .9, 16), DG, .5, 0, 0, 0, 0, HALF); P(br, CY(.055, .055, .06, 16), DG2, .94, 0, 0, 0, 0, HALF);
+  P(br, CY(.016, .016, .3, 8), K, .2, -.04, .17, 0, 0, HALF);
+  br.userData.muzzle = new THREE.Vector3(.98, 0, 0); u.barrel = br; u.muzzles = [br];
+  shadow(g, L * .5); u.type = 'veh';
+  return g;
+}
 // Leichter Panzer der Alliierten nach Foto (Sherman im Klemmbaustein-Stil): olivgrün, drei Laufwerksgruppen mit Federn,
 // runde Getriebenase, schräger Bug mit Kisten, rundlicher Turm mit langem Rohr, Heck mit grauen Platten, Holzkiste, Sandsack
 function sherman(side) {
@@ -881,7 +943,7 @@ export const VEHICLES = ['schwer', 'leicht', 'trans', 'krad', 'art', 'flak', 'fl
 export function buildUnit(key, side) {
   let g;
   switch (key) {
-    case 'schwer': g = tank(side, true); break;
+    case 'schwer': g = side === 'al' ? churchill(side) : tank(side, true); break;
     case 'leicht': g = side === 'al' ? sherman(side) : tank(side, false); break;
     case 'trans': g = halftrack(side); break;
     case 'krad': g = krad(side); break;
