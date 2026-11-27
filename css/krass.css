@@ -126,8 +126,6 @@ html[data-theme="dark"] .gcard.rend{background:linear-gradient(#3e2620,#2e1c18)!
 .gp-next.t-end{background:linear-gradient(#b0442c,#4e1a10)!important;color:#fff3e0!important;box-shadow:0 0 0 3px #d9826a,0 0 0 6px var(--ink-k),5px 7px 0 5px rgba(0,0,0,.6)!important}
 /* Rundenende: Zielflagge in ihrer Farbe (Blau, Grün, Rot, Gelb, Pink) */
 .gcard.rend .re-flag{display:inline-block;padding:0 .3em;margin-right:.1em;background:var(--oc,#c91a1a);color:var(--oct,#fff);border:2px solid var(--ink-k);border-radius:4px;-webkit-text-stroke:0;text-shadow:none;transform:rotate(-4deg)}
-.gcard.rend .re-ic canvas.re3d{border-radius:8px;box-shadow:0 0 0 3px var(--oc,#c91a1a)}
-
 /* ---------- Popups schlagen wie ein Comic-Panel auf ---------- */
 .pop-card,.net-pop,.mu-pop,#dice-pop{border:3px solid var(--ink-k)!important;box-shadow:7px 8px 0 var(--ink-k),0 20px 50px rgba(0,0,0,.6)!important;border-radius:4px!important}
 .pop-card{animation:panelSlam .26s cubic-bezier(.25,1.5,.5,1)!important}
