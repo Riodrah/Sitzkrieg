@@ -306,14 +306,29 @@ function attach(play) {
   const v = mount(art, c); if (v && (play || !still)) act(v);
 }
 // Rundenende: Missionsziel-Felder als 3D-Modell, Flakgeschütz in 3D
-function roundEnd() {
-  const ic = document.querySelector('#tab-spiel .gcard.rend .re-ic'); if (!ic || ic.dataset.d3) return; ic.dataset.d3 = '1';
+// Das Modell des Missionsziels dreht sich langsam (nur bei Missionszielen, nicht beim Bildschirm „Rauch und Feuer“)
+const OBJ_KEY = { Transporter: 'trans', Kampfflieger: 'flieger', 'Artilleriegeschütz': 'art', 'Flakgeschütz': 'flak' };
+let RER = null, reTurn = null;
+async function roundEnd() {
+  const ic = document.querySelector('#tab-spiel .gcard.rend:not(.refire) .re-ic'); if (!ic || ic.dataset.d3) return; ic.dataset.d3 = '1';
   const name = (ic.parentElement.querySelector('.gc-name')?.textContent || '').replace('⚑', '').trim();
-  const emo = ic.querySelector('.re-emo'), flak = ic.querySelector('.re-art.flak');
-  const p = typeof PIECES !== 'undefined' ? PIECES.find(x => x.name === name) : null;
-  const put = (el, key) => getPhoto(key, 'de', 260).then(u => { if (el.isConnected) el.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
-  if (emo && p) put(emo, 'feld:' + p.key);
-  if (flak) put(flak, 'flak');
+  const p = typeof PIECES !== 'undefined' ? PIECES.find(x => x.name === name || (x.key === 'wohn' && name === 'Wohnhaus')) : null;
+  const key = OBJ_KEY[name] || (p ? 'feld:' + p.key : null); if (!key) return;
+  // sofort ein Standbild zeigen, dann durch die Drehbühne ersetzen
+  const slot = ic.querySelector('.re-emo, .re-art'); getPhoto(key, 'de', 260).then(u => { if (slot && slot.isConnected && !ic.querySelector('canvas')) slot.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
+  if (still) return;
+  await heavy(); const { fieldModel } = await import('./gelaende.js'); if (!ic.isConnected) return;
+  if (!RER) { RER = new THREE.WebGLRenderer({ antialias: true, alpha: true }); RER.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); RER.outputColorSpace = THREE.SRGBColorSpace; RER.toneMapping = THREE.NeutralToneMapping; RER.toneMappingExposure = .9; RER.domElement.className = 're3d'; }
+  const scene = new THREE.Scene(); lights(scene, RER);
+  const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : buildUnit(key, 'de'), piv = new THREE.Group(); scene.add(piv); piv.add(g);
+  const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
+  const h = Math.max(70, (ic.clientHeight || 150) - 8), w = Math.max(120, Math.min(ic.clientWidth || 260, Math.round(h * 1.9))), a = w / h;   // passt in den Bildbereich der Karte
+  const cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.12, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
+  RER.setSize(w, h, false); RER.domElement.style.width = w + 'px'; RER.domElement.style.height = h + 'px';
+  if (slot) slot.replaceChildren(RER.domElement); else ic.appendChild(RER.domElement);
+  const me = reTurn = { t0: performance.now() };
+  (function spin() { if (reTurn !== me || !RER.domElement.isConnected) { if (reTurn === me) reTurn = null; return; } requestAnimationFrame(spin); if (document.hidden) return;
+    piv.rotation.y = -.3 + (performance.now() - me.t0) / 1000 * .5; RER.render(scene, cam); })();
 }
 new MutationObserver(roundEnd).observe(document.getElementById('tab-spiel'), { childList: true });
 

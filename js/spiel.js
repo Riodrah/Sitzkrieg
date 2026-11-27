@@ -116,11 +116,12 @@ function endHTML(){
   if(S.end<0) return fireHTML();
   const L=objList(), i=S.end, o=L[i]; if(!o) return '';
   const row=objRow(o.name);
-  return `<div class="gcard rend">
+  const oc=typeof OBJ_COL!=='undefined'?OBJ_COL[i%OBJ_COL.length]:'#c91a1a', ot=typeof OBJ_TXT!=='undefined'?OBJ_TXT[i%OBJ_TXT.length]:'#fff';   // Farbe der Zielflagge (Blau, Grün, Rot, Gelb, Pink)
+  return `<div class="gcard rend" style="--oc:${oc};--oct:${ot}">
     <div class="gc-top">★ Rundenende · Runde ${S.round}</div>
     <div class="re-body">
       <div class="re-ic">${objIcon(o)}</div>
-      <h3 class="gc-name">⚑ ${o.name}</h3>
+      <h3 class="gc-name"><span class="re-flag">⚑</span> ${o.name}</h3>
       <div class="tw"><table class="rt kv re-tab">
         <tr><th>1–3</th><td>Nichts passiert</td></tr>
         <tr><th>4–5 · Zieleffekt</th><td>${row.ziel}</td></tr>
