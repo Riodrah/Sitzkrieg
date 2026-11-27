@@ -379,7 +379,7 @@ const RW = {
   flammenwerfer: [['flame', 'de'], ['flame', 'al']], medikit: [['medic', 'de'], ['medic', 'al']], mechaniker: [['mech', 'de'], ['mech', 'al']],
   spezialeinheiten: ['sniper', 'shotgun', 'mg', 'grenade', 'mortar', 'pzf'].map(k => [k, 'de']),
   'schwerer-panzer': [['schwer', 'de'], ['schwer', 'al']], 'leichter-panzer': [['leicht', 'de'], ['leicht', 'al']], kraftrad: [['krad', 'de'], ['krad', 'al']],
-  'kampfflieger-werte': [['flieger', 'de'], ['flieger', 'al']], fahrzeuge: [['trans', 'de'], ['art', 'de'], ['flak', 'de']],
+  'kampfflieger-werte': [['flieger', 'al']], fahrzeuge: [['trans', 'de'], ['art', 'de'], ['flak', 'de']],
 };
 const VEHK = ['schwer', 'leicht', 'trans', 'art', 'krad', 'flieger', 'flak'];
 let rwDone = false;
