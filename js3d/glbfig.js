@@ -30,8 +30,8 @@ function handCenter(geo) {
 // Umfärben im Shader: Grüntöne -> Uniformfarbe der Seite, Haut auf der Brust -> geschlossene Jacke
 function faction(base, side, arm = false) {
   const m = base.clone();
-  const uni = side === 'de' ? new THREE.Color(0x8a8f78) : new THREE.Color(0x8c8452);
-  const helm = side === 'de' ? new THREE.Color(0x6e7363) : new THREE.Color(0x707040);
+  const uni = new THREE.Color(side === 'de' ? 0x8a8f78 : side === 'ab' ? 0xb4ad78 : 0x8c8452);   // ab = Abtrünnige (helles Sand)
+  const helm = new THREE.Color(side === 'de' ? 0x6e7363 : side === 'ab' ? 0xbab27c : 0x707040);
   m.onBeforeCompile = sh => {
     sh.uniforms.uUni = { value: uni }; sh.uniforms.uHelm = { value: helm }; sh.uniforms.uArm = { value: arm ? 1 : 0 };
     sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vOP;').replace('#include <begin_vertex>', '#include <begin_vertex>\nvOP = position;');
@@ -61,7 +61,7 @@ export const GFREADY = (async () => {
     const hR = handCenter(sp.r).sub(shR), hL = handCenter(sp.l).sub(shL);
     sp.r.translate(-shR.x, -shR.y, -shR.z); sp.l.translate(-shL.x, -shL.y, -shL.z);
     for (const g of [sp.body, sp.r, sp.l, ...sp.pieces]) g.computeBoundingSphere();
-    const mats = { de: faction(mesh.material, 'de'), al: faction(mesh.material, 'al'), mod: mesh.material }, armMats = { de: faction(mesh.material, 'de', true), al: faction(mesh.material, 'al', true) };
+    const mats = { de: faction(mesh.material, 'de'), al: faction(mesh.material, 'al'), ab: faction(mesh.material, 'ab'), mod: mesh.material }, armMats = { de: faction(mesh.material, 'de', true), al: faction(mesh.material, 'al', true), ab: faction(mesh.material, 'ab', true) };
     Object.assign(GF, { armMats, pieces: sp.pieces, body: sp.body, armR: sp.r, armL: sp.l, shR, shL, hR, hL, mats, ok: true });
   } catch (e) { console.warn('Soldaten-Modell nicht geladen', e); }
   return GF;

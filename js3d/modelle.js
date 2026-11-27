@@ -670,23 +670,79 @@ function howitzer(side) {
   shadow(g, 1.4); u.type = 'veh';
   return g;
 }
+// Flakgeschütz nach Foto (8,8-cm-Flak im Klemmbaustein-Stil): sandfarben, Kreuzlafette mit vier Auslegern und Stützfüßen,
+// Sockel, hoher Schild mit Keil vorn, langes steiles Rohr mit weißen Ringen und Rücklaufzylindern obenauf
+function flak88(side) {
+  const g = G(), u = g.userData, b = G(); g.add(b); u.body = b;
+  const S = side === 'de' ? 0xb4a66a : COL[side].veh, S2 = side === 'de' ? 0x9c8f58 : COL[side].veh2;
+  for (const a of [Math.PI / 4, -Math.PI / 4]) brick(b, 3.0, .14, .24, S, 0, .14, 0, { rot: [0, a, 0], studs: false, r: .02 });   // Kreuzlafette
+  for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+    const x = sx * 1.06, z = sz * 1.06;
+    brick(b, .4, .06, .4, S, x, .03, z);                                                                     // Stützteller
+    P(b, CY(.09, .09, .26, 16), S, x, .19, z); P(b, CY(.12, .12, .05, 16), S, x, .33, z);                   // Spindel
+    for (const t of [.45, .7]) P(b, CY(.035, .035, .3, 10), S2, sx * t, .27, sz * t, 0, sx * sz > 0 ? -Math.PI / 4 : Math.PI / 4, HALF);   // Rohre an den Auslegern
+  }
+  P(b, CY(.36, .42, .34, 24), S, 0, .38, 0);                                                                // Sockel
+  const cr = G(); cr.position.set(0, .62, 0); b.add(cr); u.turret = cr;
+  brick(cr, .9, .16, .8, S, 0, 0, 0, { studs: false });
+  for (const sz of [-1, 1]) brick(cr, .7, .55, .1, S, -.05, .33, sz * .27, { studs: false });              // Lagerböcke
+  const sh = G(); sh.position.set(.5, .38, 0); cr.add(sh);                                                  // Schild: hoher Block + Keil mit Balkenkreuz
+  P(sh, RB(.14, 1.05, .5, .02), S, 0, .1, .27);
+  P(sh, CY(.13, .13, .06, 20), S, .08, .32, .3, 0, 0, HALF);                                                // Rundplatte
+  P(sh, RB(.32, .9, .5, .02), S, .1, 0, -.22, 0, 0, -.18);                                                  // Keil
+  insignia(sh, side, .26, .33, .12, -.22, HALF);
+  for (let i = 0; i < 6; i++) P(sh, SP(.018), S2, .08, -.4 + i * .1, .03);                                  // Nietreihe
+  const el = G(); el.position.set(0, .45, 0); el.rotation.z = .85; cr.add(el); u.barrel = el; u.muzzles = [];
+  const br = G(); el.add(br);
+  P(br, RB(.7, .26, .3, .03), S, .05, 0, 0);                                                               // Verschluss / Wiege
+  P(br, CY(.08, .08, 1.0, 18), S, .9, 0, 0, 0, 0, HALF);
+  P(br, CY(.1, .1, .08, 18), S, 1.42, 0, 0, 0, 0, HALF);                                                    // Ring
+  for (let i = 0; i < 3; i++) P(br, CY(.088, .088, .04, 18), WHT, 1.52 + i * .05, 0, 0, 0, 0, HALF);        // weiße Abschussringe
+  P(br, CY(.075, .075, 1.1, 18), S, 2.2, 0, 0, 0, 0, HALF); P(br, CY(.09, .09, .06, 18), S, 2.1, 0, 0, 0, 0, HALF);
+  P(br, CY(.08, .08, .12, 18), S, 2.78, 0, 0, 0, 0, HALF); P(br, CY(.05, .05, .02, 14), 0x1e1e12, 2.845, 0, 0, 0, 0, HALF);
+  for (const [y, z, l] of [[.17, .07, 1.0], [.17, -.09, .8]]) { P(br, CY(.07, .07, l, 16), S, .35 + l / 2, y, z, 0, 0, HALF); P(br, CY(.075, .075, .03, 16), S2, .35 + l, y, z, 0, 0, HALF); }   // Rücklaufzylinder
+  br.userData.muzzle = new THREE.Vector3(2.9, 0, 0); u.muzzles.push(br, br);
+  const f = soldier(side, 'rif'); f.remove(f.userData.shadow); f.scale.setScalar(.7); f.position.set(-.7, .18, .75); f.rotation.y = .3; f.userData.weapon.visible = false; f.userData.armR.rotation.x = -1.7; b.add(f);
+  shadow(g, 1.5); u.type = 'veh';
+  return g;
+}
+// Kampfflieger nach Foto (Jagdflugzeug im Klemmbaustein-Stil): elliptische Flügel, Wüstentarnung aus zwei Brauntönen,
+// hellblaue Unterseite, roter Spinner, schwarzer Dreiblattpropeller mit gelben Spitzen, Glaskanzel, Antenne, Bordkanonen
+const ELL = (rx, ry, d, half = false) => cached(`ell${rx},${ry},${d},${half}`, () => { const s = new THREE.Shape(); if (half) { s.absellipse(0, 0, rx, ry, 0, Math.PI, false); s.closePath(); } else s.absellipse(0, 0, rx, ry, 0, Math.PI * 2, false); const e = new THREE.ExtrudeGeometry(s, { depth: d, bevelEnabled: true, bevelThickness: .012, bevelSize: .012, bevelSegments: 2, curveSegments: 40 }); e.translate(0, 0, -d / 2); return e; });
 function plane(side) {
-  const g = G(), c = COL[side], u = g.userData, b = G(); b.position.y = 1.25; g.add(b); u.body = b;
-  const col = side === 'de' ? 0x8b98a3 : c.veh, under = side === 'de' ? 0xb9cad6 : 0xa3a77d;
-  brick(b, 2.8, .5, .6, col, 0, 0, 0);
-  slope(b, .5, .5, .6, col, 1.6, 0, 0, Math.PI);
-  brick(b, 1.1, .12, 4.4, col, .2, -.12, 0);
-  brick(b, .55, .08, 1.6, col, -1.3, .1, 0);
-  brick(b, .55, .65, .08, col, -1.3, .45, 0, { studs: false });
-  P(b, SP(.25, 0, Math.PI * 2, 0, HALF), new THREE.MeshPhysicalMaterial({ color: 0x9fd8f0, roughness: .05, transmission: .6, transparent: true, opacity: .75 }), .2, .27, 0).scale.set(1.7, 1, 1);
-  P(b, cached('spin', () => new THREE.ConeGeometry(.17, .35, 20)), side === 'de' ? 0xf0d040 : RED, 2.0, 0, 0, 0, 0, -HALF);
-  const pr = G(); pr.position.set(2.05, 0, 0); b.add(pr); u.prop = pr;
-  for (let i = 0; i < 3; i++) { const bl = P(pr, RB(.04, .9, .12, .015), BLK, 0, 0, 0); const a = i * Math.PI * 2 / 3; bl.position.set(0, Math.cos(a) * .3, Math.sin(a) * .3); bl.rotation.x = a; }
-  P(b, RB(.6, .03, 4.2, .01), under, .2, -.19, 0);
-  for (const z of [-.6, .6]) { P(b, CY(.03, .03, .45, 8), DGR, .4, -.42, z); wheel(b, .12, .06, .4, -.62, z, DGR).rotation.set(HALF, 0, 0); }
-  for (const z of [1.5, -1.5]) insignia(b, side, .55, .2, -.0, z, 0, -HALF).position.y = -.05;
-  insignia(b, side, .36, -.75, 0, .301);
-  u.bombs = []; for (const z of [-.9, .9]) { const bm = G(); P(bm, cached('bomb', () => new THREE.CapsuleGeometry(.09, .32, 6, 14)), 0x3a3a30, 0, 0, 0, 0, 0, HALF); bm.position.set(.25, -.36, z); b.add(bm); u.bombs.push(bm); }
+  const g = G(), u = g.userData, b = G(); b.position.y = 1.25; g.add(b); u.body = b;
+  const al = side !== 'de', C1 = al ? 0xe2d39a : 0x8b98a3, C2 = al ? 0x8f6430 : 0x5f6b74, UND = al ? 0xa9cde0 : 0xb9cad6;
+  // Rumpf
+  P(b, RB(1.9, .5, .5, .1), C1, .1, 0, 0);
+  for (const [x, w] of [[.45, .5], [-.35, .4]]) P(b, RB(w, .505, .505, .1), C2, x, 0, 0);                  // Tarnflecken
+  P(b, RB(.55, .46, .46, .14), C1, 1.3, -.01, 0);                                                           // Motorhaube
+  P(b, RB(1.1, .34, .3, .1), C1, -1.35, .06, 0); P(b, RB(.4, .345, .305, .1), C2, -1.2, .06, 0);            // Heck
+  P(b, RB(2.6, .06, .44, .03), UND, -.1, -.24, 0);                                                          // Unterseite
+  for (const sz of [-1, 1]) for (let i = 0; i < 5; i++) P(b, CY(.028, .028, .07, 10), BLK, 1.12 + i * .1, .04, sz * .25, HALF, 0, 0);   // Auspuffstutzen
+  // Spinner + Propeller
+  P(b, cached('spin', () => new THREE.ConeGeometry(.2, .38, 24)), al ? RED : 0xf0d040, 1.75, 0, 0, 0, 0, -HALF);
+  const pr = G(); pr.position.set(1.68, 0, 0); b.add(pr); u.prop = pr;
+  for (let i = 0; i < 3; i++) { const a = i * Math.PI * 2 / 3, bl = G(); bl.rotation.x = a; pr.add(bl); P(bl, RB(.04, .95, .13, .02), BLK, 0, .55, 0); P(bl, RB(.042, .12, .132, .02), 0xf0d040, 0, 1.0, 0); }
+  // Kanzel + Antenne
+  P(b, cached('canopy', () => new THREE.CapsuleGeometry(.17, .45, 8, 16)), new THREE.MeshPhysicalMaterial({ color: 0xcfe8f0, roughness: .05, transmission: .7, transparent: true, opacity: .55, clearcoat: 1 }), .15, .27, 0, 0, 0, HALF).scale.set(1, 1, .9);
+  P(b, CY(.015, .02, .4, 8), C1, -.45, .45, 0, 0, 0, .2);
+  // Elliptische Flügel (Oberseite sand mit Braunflecken, Unterseite hellblau)
+  const wing = G(); wing.position.set(.25, -.15, 0); wing.rotation.x = -HALF; b.add(wing);
+  P(wing, ELL(.5, 2.35, .08), C1, 0, 0, 0);
+  P(wing, ELL(.5, 2.35, .01), UND, 0, 0, -.05);
+  for (const sz of [-1, 1]) {
+    for (const [x, z, w, d] of [[.05, 1.5, .5, .5], [-.15, .55, .45, .45], [.22, 1.0, .25, .3]]) P(b, RB(w, .015, d, .005), C2, .25 + x, -.1, sz * z);
+    P(b, CY(.025, .025, .45, 10), C2, .78, -.13, sz * .95, 0, 0, HALF);                                     // Bordkanone
+    insignia(b, side, .5, .2, -.095, sz * 1.15, 0, -HALF);
+  }
+  // Leitwerk
+  const fin = G(); fin.position.set(-1.85, .2, 0); b.add(fin); P(fin, ELL(.32, .5, .05, true), C1, 0, 0, 0);
+  if (al) for (const [i, col] of [[0, RED], [1, WHT], [2, 0x23306e]]) for (const sz of [-1, 1]) P(fin, RB(.07, .3, .01, .003), col, .12 - i * .07, .18, sz * .032);   // Seitenruderstreifen
+  const tp = G(); tp.position.set(-1.85, .05, 0); tp.rotation.x = -HALF; b.add(tp); P(tp, ELL(.25, .8, .05), C1, 0, 0, 0);
+  insignia(b, side, .34, -.75, 0, .256); insignia(b, side, .34, -.75, 0, -.256, Math.PI);
+  // Fahrwerk
+  for (const z of [-.55, .55]) { P(b, CY(.03, .03, .42, 8), DGR, .45, -.4, z); wheel(b, .12, .06, .45, -.62, z, DGR).rotation.set(HALF, 0, 0); }
+  u.bombs = []; for (const z of [-1.05, 1.05]) { const bm = G(); P(bm, cached('bomb', () => new THREE.CapsuleGeometry(.09, .32, 6, 14)), 0x3a3a30, 0, 0, 0, 0, 0, HALF); bm.position.set(.25, -.3, z); b.add(bm); u.bombs.push(bm); }
   shadow(g, 1.5); u.type = 'air';
   return g;
 }
@@ -701,7 +757,7 @@ export function buildUnit(key, side) {
     case 'trans': g = halftrack(side); break;
     case 'krad': g = krad(side); break;
     case 'art': g = howitzer(side); break;
-    case 'flak': g = fieldGun(side, true); break;
+    case 'flak': g = flak88(side); break;
     case 'flieger': g = plane(side); break;
     case 'modern': g = modern(); break;
     case 'general-veteran': g = soldier(side, 'general', { veteran: true, abil: 'Veteran' }); break;

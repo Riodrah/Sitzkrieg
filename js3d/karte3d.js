@@ -3,6 +3,7 @@
 // Antippen eines Feldes öffnet dieselbe Info wie in der 2D-Karte. Gerendert wird nur bei Bewegung (spart Akku).
 import { THREE, brick, slope, plastic, insignia, buildUnit } from './modelle.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
+import { GF } from './glbfig.js';
 import { lights, envFor } from './foto.js';
 import { TERRAIN, terrain, G, HALF, sandbag, R } from './gelaende.js';
 
@@ -30,10 +31,63 @@ export function wireRoll(p, x, z, ry, s = .55) {
   }
   return u;
 }
+// Oldtimer-Cabrio wie im echten Aufbau: weiße Karosserie mit Noppen, schwarze Kotflügel und Trittbretter, grauer Kühlergrill,
+// runde weiße Scheinwerfer mit Glas, grauer Stoßfänger, Rahmen der Windschutzscheibe, braun-beige Sitze
+export function oldCar(p, x, z, ry, s = .45) {
+  const c = G(); c.position.set(x, 0, z); c.rotation.y = ry; c.scale.setScalar(s); p.add(c);
+  const W = 0xf2eee2, K = 0x1b1b1b, LG = 0xa3a8ab, DG = 0x6b6e72, M = (geo, col, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, plastic(col)); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); c.add(m); return m; };
+  for (const wx of [-.52, .5]) for (const sz of [-1, 1]) {
+    M(new THREE.CylinderGeometry(.19, .19, .14, 24), K, wx, .19, sz * .36, HALF);                 // Reifen
+    M(new THREE.CylinderGeometry(.1, .1, .15, 20), LG, wx, .19, sz * .36, HALF);                  // Felge
+    M(new THREE.CylinderGeometry(.24, .24, .2, 24, 1, true, -HALF, Math.PI), K, wx, .2, sz * .36, HALF, 0, 0).material = plastic(K, { side: THREE.DoubleSide });   // Kotflügel
+  }
+  for (const sz of [-1, 1]) brick(c, .62, .05, .16, K, -.01, .15, sz * .38, { studs: false });   // Trittbrett
+  brick(c, 1.5, .24, .58, W, 0, .32, 0, { studs: false });                                     // Karosserie
+  brick(c, .5, .1, .5, W, .5, .49, 0);                                                         // Motorhaube mit Noppen
+  brick(c, .5, .12, .58, W, -.5, .5, 0);                                                       // Heck mit Noppen
+  for (const sz of [-1, 1]) brick(c, .5, .12, .06, W, 0, .5, sz * .26, { studs: false });       // Seitenwände am Sitzraum
+  brick(c, .5, .03, .46, 0xd9c08a, 0, .45, 0, { studs: false });                               // Boden
+  brick(c, .14, .16, .46, 0x8a5a2e, -.16, .52, 0, { studs: false });                           // Sitzbank
+  brick(c, .06, .14, .46, 0x8a5a2e, -.23, .62, 0, { studs: false });
+  for (const sz of [-1, 1]) M(new THREE.CylinderGeometry(.018, .018, .26, 8), LG, .24, .68, sz * .22);   // Rahmen Windschutzscheibe
+  M(new THREE.CylinderGeometry(.018, .018, .46, 8), LG, .24, .8, 0, HALF);
+  M(new THREE.CylinderGeometry(.018, .018, .46, 8), LG, .24, .56, 0, HALF);
+  brick(c, .06, .28, .24, DG, .78, .4, 0, { studs: false });                                  // Kühlergrill
+  for (let i = 0; i < 5; i++) brick(c, .01, .025, .2, 0x2a2b2d, .815, .3 + i * .05, 0, { studs: false });
+  for (const sz of [-1, 1]) {
+    M(new THREE.SphereGeometry(.08, 18, 12, 0, Math.PI * 2, 0, HALF), W, .8, .46, sz * .21, 0, 0, -HALF);   // Scheinwerfergehäuse
+    const gl = M(new THREE.CylinderGeometry(.055, .055, .03, 18), 0xffffff, .82, .46, sz * .21, 0, 0, HALF);
+    gl.material = new THREE.MeshPhysicalMaterial({ color: 0xffffff, roughness: .02, transmission: .85, transparent: true, opacity: .7, clearcoat: 1 });
+  }
+  brick(c, .08, .07, .72, LG, .86, .2, 0, { studs: false });                                   // Stoßfänger
+  brick(c, .03, .05, .05, 0xb01e2a, -.76, .4, .2, { studs: false });                           // Rücklicht
+  c.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  return c;
+}
+// Abtrünnige wie im echten Aufbau: zwei sandfarbene Platten auf einem Feld, links in Ruhestellung (Gewehr gesenkt), rechts im Anschlag
+function renegade(p, x, z, aim) {
+  const f = buildUnit('rif', 'al'); f.scale.setScalar(.17); f.position.set(x, .03, z); p.add(f);
+  if (f.userData.shadow) f.remove(f.userData.shadow);
+  if (GF.ok && GF.mats.ab) f.traverse(o => { if (o.material === GF.mats.al) o.material = GF.mats.ab; else if (o.material === GF.armMats.al) o.material = GF.armMats.ab; });
+  const { armL, armR, weapon: w } = f.userData;   // das Gewehr hängt an der rechten Hand: Armwinkel + Gegendrehung in der Hand
+  const pose = (r, l, wr) => { if (armR) armR.rotation.x = r; if (armL) armL.rotation.x = l; if (w) w.rotation.x += wr; };
+  if (aim) { pose(-1.1, -1.2, 1.1); f.rotation.y = R() * .3 - .15; }   // im Anschlag: Gewehr waagerecht auf Schulterhöhe
+  else pose(-.15, -.1, 1.55);                                          // Ruhe: Gewehr senkrecht nach unten
+  return f;
+}
+export function renegades(g) {
+  const TANP = 0xcfc39a;
+  const a = G(); a.position.set(-.38, 0, .05); a.rotation.y = .08; g.add(a); brick(a, .66, .03, .48, TANP, 0, .015, 0);
+  for (const [x, z] of [[-.24, -.12], [-.08, -.12], [.08, -.12], [.24, -.12], [-.18, .12], [0, .12], [.18, .12]]) renegade(a, x, z, false);
+  const b = G(); b.position.set(.4, 0, .12); b.rotation.y = -.35; g.add(b); brick(b, .66, .03, .48, TANP, 0, .015, 0);
+  for (const [x, z] of [[-.24, -.14], [-.08, -.16], [.08, -.14], [.24, -.16], [-.14, .1], [.04, .12], [.22, .1]]) renegade(b, x, z, true);
+}
 function extProp(g, name) {
+  if (/Abtr/.test(name)) { renegades(g); return; }
   const e = G(); e.position.set(-.5, 0, .5); g.add(e);
   if (/Stachel/.test(name)) { wireRoll(e, -.05, .02, .12); wireRoll(e, .5, -.05, -.08); wireRoll(e, .22, -.42, .25); }
-  else if (/Auto|Jeep/.test(name)) { brick(e, .6, .2, .32, /Jeep/.test(name) ? 0x5f6b3a : 0x2a3a5a, 0, .2, 0); brick(e, .3, .14, .3, 0x9fd2ea, -.05, .37, 0, { studs: false }); for (const x of [-.2, .2]) for (const z of [-.17, .17]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 14), plastic(0x1b1b1b)); w.rotation.x = HALF; w.position.set(x, .08, z); e.add(w); } }
+  else if (/Auto/.test(name)) oldCar(e, .25, -.05, .3);
+  else if (/Jeep/.test(name)) { brick(e, .6, .2, .32, /Jeep/.test(name) ? 0x5f6b3a : 0x2a3a5a, 0, .2, 0); brick(e, .3, .14, .3, 0x9fd2ea, -.05, .37, 0, { studs: false }); for (const x of [-.2, .2]) for (const z of [-.17, .17]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(.08, .08, .05, 14), plastic(0x1b1b1b)); w.rotation.x = HALF; w.position.set(x, .08, z); e.add(w); } }
   else if (/Flugzeug/.test(name)) { brick(e, .7, .18, .2, 0x7a7a72, 0, .1, 0, { rot: [0, .3, .15] }); brick(e, .2, .05, .7, 0x6a6a62, .05, .1, 0, { rot: [0, .3, -.2] }); }
   else if (/Kutsche/.test(name)) { brick(e, .5, .25, .32, 0x6b4a2a, 0, .2, 0); for (const x of [-.2, .2]) { const w = new THREE.Mesh(new THREE.TorusGeometry(.1, .02, 6, 14), plastic(0x3a2a1a)); w.position.set(x, .1, .17); e.add(w); } }
   else { for (let i = 0; i < 4; i++) sandbag(e, i * .17, .07, 0); }
@@ -120,7 +174,9 @@ function build() {
       const tg = tag('⚑ ' + (o.flex ? o.name : 'Ziel'), '#b3261a'); tg.position.set(0, 2.3, 0); g.add(tg);
       if (o.flex && o.name === 'Artilleriegeschütz') {   // Batterie: drei Geschütze versetzt wie im echten Aufbau, zielen zur Kartenmitte
         const bat = G(); bat.position.set(-.15, .02, .1); bat.rotation.y = -g.position.z > 0 ? -HALF : HALF; g.add(bat);
-        for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } } }
+        for (const [x, z] of [[.05, -.5], [-.3, 0], [.12, .5]]) { const gun = buildUnit('art', 'de'); gun.scale.setScalar(.25); gun.position.set(x, 0, z); bat.add(gun); } }
+      if (o.flex && o.name === 'Flakgeschütz') { const fl = buildUnit('flak', 'de'); fl.scale.setScalar(.3); fl.position.set(-.2, .02, .2); fl.rotation.y = .6; g.add(fl); }
+      if (o.flex && o.name === 'Kampfflieger') { const pl = buildUnit('flieger', 'al'); pl.userData.body.position.y = .74; pl.scale.setScalar(.27); pl.position.set(-.15, .02, .15); pl.rotation.y = .5; g.add(pl); } }
     if (ex) { extProp(g, ex.name); const tg = tag(ex.name, '#e2b33a', '#1b1b14'); tg.position.set(0, oi >= 0 ? 1.8 : 1.6, .2); g.add(tg); }
     const rule = typeof RULES !== 'undefined' && RULES.felder && RULES.felder[x.p.key] && RULES.felder[x.p.key].regel;
     g.userData.pi = pi; g.userData.tap = true;
