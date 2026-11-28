@@ -127,6 +127,7 @@ html.lego3d-wait #loader{opacity:1;visibility:visible;pointer-events:auto;transi
 body.map3d-on #map-tools #rot{display:none!important}   /* Karte drehen nur in der 2D-Ansicht */
 .turn-host.pic2d .slot-art{width:min(260px,80%);height:auto;aspect-ratio:222/126;display:flex;align-items:center;justify-content:center}   /* 2D: Fahrzeugbild aus der Übersicht groß oben im Popup */
 .turn-host.pic2d .slot-art :is(svg,img){width:100%;height:100%;object-fit:contain}
-/* Armee: Maßstab der deutschen Panzer (Tiger größer, Panzer II kleiner) */
-.army.de .slot[data-veh="schwer"] .slot-art img.fig{scale:1.16}
-.army.de .slot[data-veh="leicht"] .slot-art img.fig{scale:.8}
+/* Armee: Maßstab der Panzer beider Seiten (schwerer größer, leichter kleiner) */
+.army .slot[data-veh="schwer"] .slot-art img.fig{scale:1.16}
+.army .slot[data-veh="leicht"] .slot-art img.fig{scale:.8}
+.army.al .slot[data-veh="leicht"] .slot-art img.fig{scale:.95}   /* Sherman-Bild hat mehr Rand: weniger verkleinern */
