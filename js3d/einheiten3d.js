@@ -51,8 +51,25 @@ function liveRenderer() {
 }
 const kindOf = c => !c ? '' : c.kind === 'rif' ? 'rif' : c.kind === 'veh' ? c.key : (c.unit ? (c.unit.key === 'general' && c.unit.abil ? 'general:' + c.unit.abil.name : c.unit.key) : '');
 
+// Alte Szene freigeben (Geometrien, Bildtexturen, kopierte Materialien), damit der Speicher nicht mit jeder Karte wächst
+function freeScene(s) {
+  if (!s) return;
+  s.traverse(o => { if (o.geometry) o.geometry.dispose(); const m = o.material;
+    if (m && !Array.isArray(m) && (o.isSprite || o.userData.charred)) { if (m.map) m.map.dispose(); m.dispose(); } });
+}
+// 2D-Modus (Karte auf „2D“): nirgends laufende 3D-Szenen, nur Standbilder der Modelle – flüssig auch auf schwachen Handys
+const lite = () => { try { return localStorage.getItem('sitzkrieg-3d') !== '1'; } catch (e) { return false; } };
+window.addEventListener('sitzkrieg-3d', () => {
+  if (lite()) {   // laufende Szenen beenden, Standbilder zurück
+    if (view) { freeScene(view.scene); view = null; } if (R && R.domElement.parentNode) R.domElement.remove();
+    if (fire3) { fire3 = null; kaminStop(); }
+    reStage.stop(); fieldStage.stop(); pop3 = null;
+  }
+  try { window.renderSpiel && renderSpiel(); } catch (e) { }
+});
 function mount(art, c) {
   const kind = kindOf(c); if (!kind) return;
+  if (view) freeScene(view.scene);
   const r = liveRenderer(), scene = new THREE.Scene(); lights(scene, r);
   const stage = new THREE.Group(); scene.add(stage);
   const root = new THREE.Group(); stage.add(root);
@@ -77,7 +94,7 @@ function mount(art, c) {
   const fx = new Fx(scene, cam);
   view = { pbox: [x0 + .1, x1 - .1, zc - pd / 2 + .1, zc + pd / 2 - .1], stage, hit, tKind, tpos: new THREE.Vector3(tx, 0, tz), targets: [], debris: [], art, scene, cam, root, units, fx, kind, side: c.side, t0: performance.now(), last: performance.now(), base: cam.position.clone(), id: Math.random() };
   spawnTargets(view); frame(cam, stage, w / h, 1.02, new THREE.Vector3(0, .42, 1)); view.base = cam.position.clone();
-  loop(); requestAnimationFrame(refit);
+  loop(view); requestAnimationFrame(refit);
   return view;
 }
 
@@ -244,12 +261,12 @@ function act(v) {
         const tip = new THREE.Mesh(new THREE.ConeGeometry(.08, .16, 16), olive); tip.rotation.x = HALF; tip.position.z = .3; rk.add(tip);
         const st = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, .32, 10), dark); st.rotation.x = HALF; st.position.z = -.16; rk.add(st);
         for (let i = 0; i < 4; i++) { const fn = new THREE.Mesh(new THREE.BoxGeometry(.006, .1, .12), dark); fn.position.set(0, 0, -.28); fn.rotation.z = i * HALF; fn.translateY(.05); rk.add(fn); }
-        rk.scale.setScalar(2.2);
+        rk.scale.setScalar(1.1);   // halb so groß wie vorher
         const end = hit.clone().setY(Math.max(.3, hit.y)), from = p.clone(); rk.position.copy(from); rk.lookAt(end); v.scene.add(rk);
         const t = { k: 0 }, dur = Math.max(.5, from.distanceTo(end) / 4);
         const done = () => { v.scene.remove(rk); fx.explosion(end, 1.1); snd('explosion'); if (v.tKind) breakApart(v, v.tKind === 'tank' ? 1.3 : 1); };   // Ziel zerfällt erst beim Einschlag
         if (gs) gs.to(t, { k: 1, duration: dur, ease: 'none', onUpdate: () => { rk.position.lerpVectors(from, end, t.k); rk.position.y += Math.sin(t.k * Math.PI) * .12; rk.rotateZ(.25);
-          const tail = rk.localToWorld(new THREE.Vector3(0, 0, -.42)); fx.fire(tail, dir.clone().negate(), 1.1); if (Math.random() < .5) fx.smoke(tail, .5, 1, 0x9a958a); }, onComplete: done });
+          const tail = rk.localToWorld(new THREE.Vector3(0, 0, -.42)); fx.fire(tail, dir.clone().negate(), .7); if (Math.random() < .5) fx.smoke(tail, .5, 1, 0x9a958a); }, onComplete: done });
         else done(); }); break;
     case 'grenade': if (gs) { gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x - .4 }, { x: d.armR.rotation.x + 1.6, duration: .25, delay: .2, ease: 'power3.in', yoyo: true, repeat: 1 }); }
       fx.at(.45, () => { const g = d.grenade; const p0 = g.getWorldPosition(new THREE.Vector3()); g.visible = false; const t = { k: 0 }; const end = hit.clone(); const ghost = g.clone(); ghost.visible = true; v.scene.add(ghost);
@@ -314,11 +331,13 @@ function act(v) {
   }
 }
 
-function loop() {
-  const v = view; if (!v) return;
+// Jede Szene hat genau eine Zeichenschleife: sie endet, sobald eine neue Karte aufgedeckt wird (früher liefen alle alten weiter
+// und das Handy wurde mit der Zeit immer langsamer). Ist der Spiel-Tab nicht sichtbar, wird nicht gezeichnet.
+function loop(v) {
+  if (!v || view !== v) return;
   if (!v.art.isConnected) { view = null; return; }
-  requestAnimationFrame(loop);
-  if (document.hidden) return;
+  requestAnimationFrame(() => loop(v));
+  if (document.hidden || v.art.offsetParent === null) { v.last = performance.now(); return; }
   const now = performance.now(), dt = Math.min(.05, (now - v.last) / 1000); v.last = now;
   const t = (now - v.t0) / 1000;
   for (const u of v.units) { const d = u.userData; if (d.prop) d.prop.rotation.x += dt * 40; if (d.type === 'inf' && d.body) d.body.position.y = Math.abs(Math.sin(t * 2.2 + u.position.x)) * .012; if (d.type === 'air') d.body.position.y = 1.25 + Math.sin(t * 1.6) * .06; }
@@ -334,7 +353,8 @@ function loop() {
 function attach(play) {
   if (!THREE) { heavy().then(() => attach(play)); return; }
   const art = document.querySelector('#tab-spiel .gcard .gc-art'); const c = window.spielGet && spielGet().cur, s = window.spielGet && spielGet();
-  if (!art || !c || (s && s.end !== null)) { view = null; return; }
+  if (!art || !c || (s && s.end !== null)) { if (view) freeScene(view.scene); view = null; return; }
+  if (lite()) { if (view) freeScene(view.scene); view = null; return; }   // 2D-Modus: Standbild bleiben lassen
   if (view && view.art === art) { if (play) act(view); return; }
   const v = mount(art, c); if (v && (play || !still)) act(v);
 }
@@ -349,11 +369,13 @@ function battery() {   // drei Artilleriegeschütze versetzt, wie auf der 3D-Kar
 }
 // Drehbühne: ein Modell (Kartenfeld 'feld:…' oder Einheit) dreht sich langsam in einem Platz der Seite
 function turnStage(cls) {
-  const st = { r: null, cur: null };
+  const st = { r: null, cur: null, scene: null };
+  st.stop = () => { st.cur = null; if (st.scene) { freeScene(st.scene); st.scene = null; } if (st.r && st.r.domElement.parentNode) st.r.domElement.remove(); };
   st.show = async (slot, key, w, h) => {
     await heavy(); const { fieldModel } = await import('./gelaende.js'); if (!slot.isConnected) return;
     if (!st.r) { st.r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); st.r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); st.r.outputColorSpace = THREE.SRGBColorSpace; st.r.toneMapping = THREE.NeutralToneMapping; st.r.toneMappingExposure = .9; st.r.domElement.className = cls; }
-    const r = st.r, scene = new THREE.Scene(); lights(scene, r);
+    if (st.scene) freeScene(st.scene);
+    const r = st.r, scene = new THREE.Scene(); lights(scene, r); st.scene = scene;
     const g = key.startsWith('feld:') ? fieldModel(key.slice(5)) : key === 'art' ? battery() : buildUnit(key, sideOf(key)), piv = new THREE.Group(); scene.add(piv); piv.add(g);
     const c = new THREE.Box3().setFromObject(g).getCenter(new THREE.Vector3()); g.position.x -= c.x; g.position.z -= c.z;   // um die eigene Mitte drehen
     const a = w / h, cam = new THREE.PerspectiveCamera(26, a); piv.rotation.y = Math.PI / 4; frame(cam, piv, a, 1.02, new THREE.Vector3(.2, .7, 1.1)); piv.rotation.y = 0;   // Rahmen für die breiteste Lage
@@ -373,7 +395,7 @@ async function roundEnd() {
   const key = OBJ_KEY[name] || (p ? 'feld:' + p.key : null); if (!key) return;
   // sofort ein Standbild zeigen, dann durch die Drehbühne ersetzen
   const slot = ic.querySelector('.re-emo, .re-art'); getPhoto(key, sideOf(key), 260).then(u => { if (slot && slot.isConnected && !ic.querySelector('canvas')) slot.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
-  if (still || !slot) return;
+  if (still || !slot || lite()) return;   // 2D-Modus: Standbild
   const h = Math.max(90, (ic.clientHeight || 230) - 4), w = Math.max(140, Math.min(ic.clientWidth || 420, Math.round(h * 1.8)));   // füllt den Bildbereich der Karte
   reStage.show(slot, key, w, h);
 }
@@ -385,7 +407,7 @@ function fieldPopup3d() {
   const p = pieceOf(document.getElementById('pop-t')?.textContent.trim()); if (!p) return;
   const key = 'feld:' + p.key; head.classList.add('fi-3d');
   getPhoto(key, 'de', 240).then(u => { if (head.isConnected && !head.querySelector('canvas')) head.innerHTML = `<img class="fig f3d veh" src="${u}" alt="" draggable="false">`; });
-  if (still) return;
+  if (still || lite()) return;   // 2D-Modus: Standbild
   const w = Math.min(340, Math.max(200, (head.clientWidth || pop.querySelector('.pop-card')?.clientWidth || 300) - 8)), h = Math.round(w * .62);
   fieldStage.show(head, key, w, h);
 }
@@ -449,6 +471,7 @@ async function popupTurntable() {
     host = document.createElement('div'); host.className = 'turn-host'; body.prepend(host); key = lastSlot.key; side = lastSlot.side;
   } else return;
   if (pop3 && pop3.host === host) return;
+  if (lite()) return;   // 2D-Modus: keine Drehbühne im Popup
   if (!THREE) await heavy();
   const r = popRenderer(), scene = new THREE.Scene(); lights(scene, r);
   const g = buildUnit(key, side); scene.add(g);
@@ -510,6 +533,7 @@ function kaminStop() { if (!KAMIN) return; const { src, g } = KAMIN, c = FCTX; K
 function mountFire() {
   const wrap = document.querySelector('#tab-spiel .gcard.refire .fire-wrap'); if (!wrap) { fire3 = null; kaminStop(); return; }
   if (fire3 && fire3.wrap === wrap) return;
+  if (lite()) { kaminStop(); return; }   // 2D-Modus: gezeichnetes Feuer statt 3D
   if (!THREE) { heavy().then(mountFire); return; }
   if (!FR) { FR = new THREE.WebGLRenderer({ antialias: true, alpha: true }); FR.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); FR.outputColorSpace = THREE.SRGBColorSpace; FR.toneMapping = THREE.NeutralToneMapping; FR.toneMappingExposure = 1; FR.domElement.className = 'fire3d'; }
   wrap.classList.add('has3d'); wrap.appendChild(FR.domElement);

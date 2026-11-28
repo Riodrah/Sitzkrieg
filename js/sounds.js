@@ -80,8 +80,9 @@ document.addEventListener('click',e=>{
   let n='button';
   if(el.closest('.tabs')) n='menu';
   // Neue Karte: Geräusch vom Klemmbaustein-Bauen
-  if(el.id==='gen'||(el.id==='fab'&&!document.body.classList.contains('on-mission'))){ Sounds.buildStart(); return; }
-  if(el.matches('.seg button[data-size]')&&!el.classList.contains('on')){ Sounds.buildStart(); return; }   // Wechsel Normal/Episch: Karte baut sich neu auf
+  const is3d=(()=>{ try{ return localStorage.getItem('sitzkrieg-3d')==='1'; }catch(e){ return false; } })();   // Bau-Geräusch nur im 3D-Modus, sonst Würfel
+  if(el.id==='gen'||(el.id==='fab'&&!document.body.classList.contains('on-mission'))){ if(is3d) Sounds.buildStart(); else Sounds.play('dice', nextDiceVariant()); return; }
+  if(el.matches('.seg button[data-size]')&&!el.classList.contains('on')){ if(is3d) Sounds.buildStart(); else Sounds.play('dice', nextDiceVariant()); return; }   // Wechsel Normal/Episch: Karte baut sich neu auf
   if(el.id==='fab'||el.id==='army-gen'||el.id==='dp-roll'){ Sounds.play('dice', nextDiceVariant()); return; }
   if(el.id==='rot'){ Sounds.play('chair', nextVariant('chair')); return; }
      // Kampfflieger Ja: Flugzeug fliegt vorbei   // Karte drehen: Stuhlrücken   // dice1.mp3 in einer zufälligen Tonhöhen-Variante
