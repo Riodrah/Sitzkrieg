@@ -186,7 +186,7 @@ function stepDebris(v, dt) {
   }
 }
 // Zeitpunkt des Treffers je Einheit (Sekunden nach Start der Aktion)
-const HIT_T = { rif: .55, sniper: .72, shotgun: .45, mg: .55, general: .45, flame: .85, grenade: 1.08, mortar: 1.5, schwer: .9, leicht: .9, art: .55, trans: 1.35, krad: 1.15, flieger: 1.65 };
+const HIT_T = { rif: .55, sniper: .72, shotgun: .45, mg: 1.2, general: .45, flame: .85, grenade: 1.08, mortar: 1.5, schwer: .9, leicht: .9, art: .55, trans: 1.35, krad: 1.8, flieger: 1.65 };
 
 // ---------- Aktionen je Einheit ----------
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
@@ -234,7 +234,7 @@ function act(v) {
   if (v.tKind) { const ht = kind.startsWith('general:') ? (kind === 'general:Veteran' ? .55 : .45) : HIT_T[kind]; if (ht) fx.at(ht, () => breakApart(v, v.tKind === 'tank' ? 1.3 : 1)); }
   const aim = v.tKind ? hit.clone().setY(v.tKind === 'tank' ? .45 : .75) : null;
   const u = units[0], d = u.userData, gs = window.gsap;
-  const shots = (obj, n, gap, o = {}) => { for (let i = 0; i < n; i++) fx.at((o.d || .25) + i * gap, () => { if (o.snd !== false) { if (o.burst) { if (i === 0) snd('mg', .95 + Math.random() * .1); } else snd(o.snd || 'gewehr', .9 + Math.random() * .2); } const m0 = muzzleOf(obj), p = m0.p, dir = aim ? aim.clone().add(V(0, (Math.random() - .5) * .3, (Math.random() - .5) * .3)).sub(p).normalize() : m0.dir; fx.muzzle(p, dir, o.k || 1); fx.tracer(p, dir, aim ? p.distanceTo(aim) + .3 : (o.len || 4), o.speed || 20); if (o.cas) fx.casing(p.clone().addScaledVector(dir, -.4)); recoil(obj, o.axis || 'z', o.rec || .05); if (o.hit) fx.at(.18, () => { fx.explosion(hit.clone(), .35); snd('explosion', 1.3); }); }); };
+  const shots = (obj, n, gap, o = {}) => { for (let i = 0; i < n; i++) fx.at((o.d || .25) + i * gap, () => { if (o.snd !== false) { if (o.burst) { if (i % 17 === 0) snd('mg', .95 + Math.random() * .1); } else snd(o.snd || 'gewehr', .9 + Math.random() * .2); } const m0 = muzzleOf(obj), p = m0.p, dir = aim ? aim.clone().add(V(0, (Math.random() - .5) * .3, (Math.random() - .5) * .3)).sub(p).normalize() : m0.dir; fx.muzzle(p, dir, o.k || 1); fx.tracer(p, dir, aim ? p.distanceTo(aim) + .3 : (o.len || 4), o.speed || 20); if (o.cas) fx.casing(p.clone().addScaledVector(dir, -.4)); recoil(obj, o.axis || 'z', o.rec || .05); if (o.hit) fx.at(.18, () => { fx.explosion(hit.clone(), .35); snd('explosion', 1.3); }); }); };
   const ground = (obj, dist) => { const { p, dir } = muzzleOf(obj); return p.clone().addScaledVector(dir.setY(0).normalize(), dist).setY(.05); };
   if (kind.startsWith('general:')) {
     const ab = kind.slice(8), head = V(0, 1.9, 0);
@@ -250,7 +250,7 @@ function act(v) {
     case 'rif': units.forEach((s, i) => shots(s.userData.weapon, 2, .32, { d: .2 + i * .07, cas: true })); break;
     case 'sniper': shots(d.weapon, 1, 0, { d: .5, k: 1.4, len: 8, speed: 40, hit: 3.5, snd: 'scharf' }); break;
     case 'shotgun': fx.at(.3, () => { snd('schrot'); const { p, dir } = muzzleOf(d.weapon); fx.muzzle(p, dir, 1.6); for (let i = 0; i < 6; i++) fx.tracer(p, dir.clone().add(V((Math.random() - .5) * .3, (Math.random() - .5) * .15, (Math.random() - .5) * .3)), 2.5, 16); recoil(d.weapon, 'z', .1); fx.casing(p.clone().addScaledVector(dir, -.4)); }); break;
-    case 'mg': shots(d.weapon, 9, .09, { cas: true, rec: .03, burst: true }); break;
+    case 'mg': shots(d.weapon, 68, .09, { cas: true, rec: .03, burst: true }); break;
     case 'general-veteran': shots(d.weapon, 9, .09, { cas: true, rec: .03 }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
     case 'general': shots(d.weapon, 2, .35, { d: .3, snd: 'pistole' }); fx.at(.2, () => fx.sparkle(V(0, 1.9, 0), 'star', 0xffd34a, 10)); break;
     case 'flame': if (v.tKind) fx.at(.45, () => ignite(v)); fx.at(.25, () => flameSound(1.1)); for (let i = 0; i < 26; i++) fx.at(.25 + i * .035, () => { const { p, dir } = muzzleOf(d.weapon); fx.fire(p, dir, 1); if (i % 5 === 0) fx.flash(p, 3); }); fx.at(1.2, () => fx.smoke(ground(d.weapon, 1.6).setY(.4), 1, 4, 0x3a3630)); break;
@@ -320,7 +320,7 @@ function act(v) {
       fx.at(.9, () => { fx.explosion(hit.clone(), 1.1); snd('explosion', .9); }); break;
     }
     case 'trans': if (gs) gs.fromTo(u.position, { x: -1.2 }, { x: 0, duration: 1.1, ease: 'power2.out' }); for (let i = 0; i < 8; i++) fx.at(i * .12, () => { fx.dust(u.localToWorld(V(-.6, 0, .8)), .8); fx.smoke(u.localToWorld(d.exhaust.clone()), .5, 1, 0x3a3836); }); shots(d.weapon, 6, .1, { d: 1.2, rec: .03, burst: true }); break;
-    case 'krad': if (gs) { gs.fromTo(u.position, { x: -1.5 }, { x: 0, duration: .9, ease: 'power3.out' }); gs.fromTo(d.body.rotation, { z: .18 }, { z: 0, duration: .8, delay: .4, ease: 'bounce.out' }); } for (let i = 0; i < 6; i++) fx.at(i * .1, () => fx.dust(u.localToWorld(V(-.8, 0, 0)), .7)); shots(d.weapon, 7, .09, { d: 1.0, rec: .03, burst: true }); break;
+    case 'krad': if (gs) { gs.fromTo(u.position, { x: -1.5 }, { x: 0, duration: .9, ease: 'power3.out' }); gs.fromTo(d.body.rotation, { z: .18 }, { z: 0, duration: .8, delay: .4, ease: 'bounce.out' }); } for (let i = 0; i < 6; i++) fx.at(i * .1, () => fx.dust(u.localToWorld(V(-.8, 0, 0)), .7)); shots(d.weapon, 68, .09, { d: 1.0, rec: .03, burst: true }); break;
     case 'art': fx.at(.5, () => { if (v.tKind) { fx.explosion(hit.clone(), 1.1); snd('explosion', .9); } }); fx.at(.4, () => { snd('kanone', .8); const { p, dir } = muzzleOf(d.muzzles[0]); fx.muzzle(p, dir, 3); fx.smoke(p, 2, 8, 0x8a857c); fx.tracer(p, dir, 7, 26); recoil(d.muzzles[0], 'x', .4, .35); fx.dust(V(-.3, .05, .8), 1.4); fx.dust(V(-.3, .05, -.8), 1.4); fx.shake(.12, .5); }); break;
     case 'flak': for (let i = 0; i < 8; i++) fx.at(.3 + i * .13, () => { snd('abschuss', 1.15 + Math.random() * .1); const br = d.muzzles[i % 2]; const { p, dir } = muzzleOf(br); fx.muzzle(p, dir, 1.1); fx.tracer(p, dir, 6, 22); recoil(br, 'x', .12, .1); if (i % 2) fx.at(.35, () => fx.smoke(p.clone().addScaledVector(dir, 4.5), .7, 2, 0x2a2826)); }); break;
     case 'flieger': {

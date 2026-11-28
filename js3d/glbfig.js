@@ -28,7 +28,7 @@ function handCenter(geo) {
   return v.multiplyScalar(1 / n);
 }
 // Umfärben im Shader: Grüntöne -> Uniformfarbe der Seite, Haut auf der Brust -> geschlossene Jacke
-function faction(base, side, arm = false) {
+function faction(base, side, arm = false, noHelm = false) {   // noHelm: Stahlhelm ausblenden (Generäle tragen eine Schirmmütze)
   const m = base.clone();
   const uni = new THREE.Color(side === 'de' ? 0x8a8f78 : side === 'ab' ? 0xb4ad78 : 0x8c8452);   // ab = Abtrünnige (helles Sand)
   const helm = new THREE.Color(side === 'de' ? 0x6e7363 : side === 'ab' ? 0xbab27c : 0x707040);
@@ -42,11 +42,12 @@ function faction(base, side, arm = false) {
         bool skin = c.r > c.g * 1.12 && c.r > c.b * 1.35;
         bool chest = uArm == 0 ? (vOP.y > -.5 && vOP.y < .4) : (vOP.y > -.47);   // Rumpf rundum (Brust, Schultern, Rücken) und Ärmel bekleiden
         vec3 tgt = (uArm == 0 && vOP.y > .62) ? uHelm : uUni;
+        ${noHelm ? 'if (uArm == 0 && !skin && vOP.y > .62) discard;' : ''}
         if (green) c = tgt * (.35 + L * 1.9);
         else if (skin && chest) c = uUni * (.55 + L * 1.1);
         diffuseColor.rgb = c;`);
   };
-  m.customProgramCacheKey = () => 'fac-' + side + (arm ? 'a' : '');
+  m.customProgramCacheKey = () => 'fac-' + side + (arm ? 'a' : '') + (noHelm ? 'g' : '');
   return m;
 }
 
@@ -61,7 +62,7 @@ export const GFREADY = (async () => {
     const hR = handCenter(sp.r).sub(shR), hL = handCenter(sp.l).sub(shL);
     sp.r.translate(-shR.x, -shR.y, -shR.z); sp.l.translate(-shL.x, -shL.y, -shL.z);
     for (const g of [sp.body, sp.r, sp.l, ...sp.pieces]) g.computeBoundingSphere();
-    const mats = { de: faction(mesh.material, 'de'), al: faction(mesh.material, 'al'), ab: faction(mesh.material, 'ab'), mod: mesh.material }, armMats = { de: faction(mesh.material, 'de', true), al: faction(mesh.material, 'al', true), ab: faction(mesh.material, 'ab', true) };
+    const mats = { de: faction(mesh.material, 'de'), al: faction(mesh.material, 'al'), ab: faction(mesh.material, 'ab'), deG: faction(mesh.material, 'de', false, true), alG: faction(mesh.material, 'al', false, true), mod: mesh.material }, armMats = { de: faction(mesh.material, 'de', true), al: faction(mesh.material, 'al', true), ab: faction(mesh.material, 'ab', true) };
     Object.assign(GF, { armMats, pieces: sp.pieces, body: sp.body, armR: sp.r, armL: sp.l, shR, shL, hR, hL, mats, ok: true });
   } catch (e) { console.warn('Soldaten-Modell nicht geladen', e); }
   return GF;

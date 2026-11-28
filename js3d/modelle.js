@@ -215,12 +215,12 @@ function headwear(h, side, kind) {
   const c = COL[side];
   if (kind === 'medic-only') kind = 'medic';
   else if (kind === 'general') {
-    if (h.parent && h.parent.userData.glb) {   // Modell-Figur: große Schirmmütze, deckt den Stahlhelm darunter ganz ab
-      P(h, CY(.3, .3, .24, 32), c.uni2, 0, .105, -.01);                     // Mützenband (reicht tief genug, kein Helmrand sichtbar)
-      P(h, CY(.345, .295, .12, 32), c.uni, 0, .285, -.025);                 // Deckel
-      P(h, CY(.35, .35, .022, 32), c.uni2, 0, .35, -.025);
-      P(h, RB(.4, .03, .19, .012), BLK, 0, .05, .25, -.22);                 // Schirm
-      P(h, RB(.11, .065, .02, .008), GOLD, 0, .22, .295); P(h, RB(.38, .024, .02, .006), GOLD, 0, .1, .3);   // Abzeichen, Kordel
+    if (h.parent && h.parent.userData.glb) {   // Modell-Figur (Stahlhelm im Modell ausgeblendet): normale Schirmmütze, sitzt auf dem Kopf
+      P(h, CY(.245, .245, .09, 32), c.uni2, 0, .08, -.01);                  // Mützenband
+      P(h, CY(.29, .245, .1, 32), c.uni, 0, .17, -.025).scale.set(1, 1, 1.06);   // Deckel, vorn leicht hochgezogen
+      P(h, CY(.292, .292, .018, 32), c.uni2, 0, .225, -.025).scale.set(1, 1, 1.06);
+      P(h, RB(.3, .022, .14, .01), BLK, 0, .045, .23, -.18);               // Schirm
+      P(h, RB(.085, .05, .015, .006), GOLD, 0, .17, .265); P(h, RB(.28, .018, .015, .005), GOLD, 0, .08, .243);   // Abzeichen, Kordel
     } else {
       P(h, CY(.2, .2, .08, 28), c.uni2, 0, .2, 0); P(h, CY(.26, .21, .11, 28), c.uni, 0, .27, -.01);
       P(h, RB(.3, .025, .13, .01), BLK, 0, .17, .17, -.25); P(h, RB(.08, .05, .02, .008), GOLD, 0, .27, .25);
@@ -242,7 +242,7 @@ function soldier(side, kind = 'rif', opt = {}) {
   const gen = kind === 'general', LEG = gen ? c.legs : camo(side, .5), ARM = gen ? c.uni2 : camo(side, .35); body.userData.bare = gen;
   let h;
   if (GF.ok && side !== 'mod') {
-    const mat = GF.mats[side]; body.userData.glb = mat; body.userData.glbArm = GF.armMats[side];
+    const mat = (gen && GF.mats[side + 'G']) || GF.mats[side]; body.userData.glb = mat;   // Generäle: Modell ohne Stahlhelm body.userData.glbArm = GF.armMats[side];
     for (const pg of GF.pieces) { const bm = new THREE.Mesh(pg, mat); bm.scale.setScalar(GS); bm.position.y = GS; bm.castShadow = true; body.add(bm); }   // Beine, Rumpf, Kopf einzeln
     h = G(); h.position.y = GS + .66 * GS; body.add(h); g.userData.head = h;
     if (side === 'de' && !gen) { P(h, SP(.27, 0, Math.PI * 2, 0, HALF), c.helm, 0, .1, -.01).scale.set(1, .95, 1.02); P(h, CY(.27, .32, .12, 32), c.helm, 0, .07, -.04); }
