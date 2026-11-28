@@ -9,11 +9,14 @@ export const SCALE = .83;                    // Modell (Höhe 2) -> unsere Figur
 const SHOULDER = new THREE.Vector3(.37, .24, 0);
 
 function torsoHalf(y) { return .245 + (.35 - y) / .8 * .09; }
+const A = new THREE.Vector3(), B = new THREE.Vector3(), C = new THREE.Vector3(), N = new THREE.Vector3();
 function split(geo) {
   const p = geo.attributes.position, idx = geo.index.array, parts = { body: [], l: [], r: [], head: [], legs: [], torso: [] };
   for (let t = 0; t < idx.length; t += 3) {
     let x = 0, y = 0; for (let k = 0; k < 3; k++) { x += p.getX(idx[t + k]); y += p.getY(idx[t + k]); } x /= 3; y /= 3;
-    const arm = y < .38 && y > -.62 && Math.abs(x) > (y > .12 ? .335 : y < -.45 ? .37 : torsoHalf(y) + .025);   // oben bleibt die Rumpfschulter am Körper
+    const th = y > .12 ? .335 : y < -.45 ? .37 : torsoHalf(y) + .025;
+    let arm = y < .38 && y > -.62 && Math.abs(x) > th;   // oben bleibt die Rumpfschulter am Körper
+    if (arm && y > -.3 && y < .12 && Math.abs(x) < .38) { A.fromBufferAttribute(p, idx[t]); B.fromBufferAttribute(p, idx[t + 1]); C.fromBufferAttribute(p, idx[t + 2]); N.subVectors(C, B).cross(A.clone().sub(B)).normalize(); if (N.x * Math.sign(x) > -.35) arm = false; }   // Rumpf-Seitenwand (zeigt nach außen) bleibt am Körper, sonst hängen Fetzen am gehobenen Arm
     (arm ? (x > 0 ? parts.r : parts.l) : parts.body).push(idx[t], idx[t + 1], idx[t + 2]);
     if (!arm) (y > .4 ? parts.head : y < -.5 ? parts.legs : parts.torso).push(idx[t], idx[t + 1], idx[t + 2]);   // für das Auseinanderfallen
   }

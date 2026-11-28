@@ -13,6 +13,7 @@
   .sub{display:none!important}                                         /* roter Stempel: im Querformat zu viel Höhe */
   /* Ecken-Knöpfe in eine Reihe oben, damit nichts in die Inhalte ragt */
   #net-btn{top:6px!important;left:8px!important;width:40px!important;height:40px!important}
+  #v3d-btn{top:6px!important;left:54px!important;width:40px!important;height:40px!important}
   #theme{top:6px!important;right:8px!important;width:40px!important;height:40px!important}
   .vol{top:6px!important;right:54px!important}
   .vol-btn{width:40px!important;height:40px!important}

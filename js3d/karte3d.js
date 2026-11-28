@@ -426,7 +426,7 @@ const box = document.createElement('div'); box.id = 'map3d';
 const wrap = document.createElement('div'); wrap.id = 'map-wrap'; map.before(wrap); wrap.append(map, box);
 const tools = document.createElement('div'); tools.id = 'map-tools'; (document.querySelector('#tab-gen .bar') || wrap).appendChild(tools);   // neben Normal/Episch: stört die Karte nicht, gleiche Stelle in 2D und 3D
 const rot = document.getElementById('rot'); if (rot) { rot.textContent = '↻'; rot.title = 'Karte drehen'; rot.setAttribute('aria-label', 'Karte drehen'); tools.appendChild(rot); }
-const sw = document.createElement('button'); sw.type = 'button'; sw.className = 'sec v3d-sw'; tools.appendChild(sw);
+const sw = document.createElement('button'); sw.type = 'button'; sw.id = 'v3d-btn'; sw.className = 'sec v3d-sw'; const nb = document.getElementById('net-btn'); if (nb) nb.after(sw); else tools.appendChild(sw);   // fest oben links unter dem Lobby-Knopf, in allen Tabs
 sw.onclick = e => { e.stopPropagation(); on = !on; try { localStorage.setItem(KEY, on ? '1' : '0'); } catch (er) { } apply(); window.dispatchEvent(new Event('sitzkrieg-3d')); };   // Armee, Spiel, Regeln folgen dem Schalter
 function apply() { document.body.classList.toggle('map3d-on', on); sw.textContent = on ? '2D' : '3D'; sw.title = on ? 'Zurück zur 2D-Karte' : 'Als 3D-Spieltisch anzeigen'; if (on) requestAnimationFrame(build); else if (typeof render === 'function') requestAnimationFrame(() => render()); }   // 2D neu vermessen
 let t = null; new MutationObserver(() => { if (!on) return; clearTimeout(t); t = setTimeout(build, 30); }).observe(map, { childList: true });

@@ -124,3 +124,4 @@ html.lego3d-wait #loader{opacity:1;visibility:visible;pointer-events:auto;transi
 .fi-head.fi-3d{justify-content:center;margin:0 0 8px;min-height:120px}
 .fi-head.fi-3d img.fig{width:auto!important;height:150px!important;max-width:100%}
 .fi-head.fi-3d canvas.fi3d{display:block;max-width:100%}
+body.map3d-on #map-tools #rot{display:none!important}   /* Karte drehen nur in der 2D-Ansicht */

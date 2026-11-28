@@ -56,7 +56,7 @@ button.big,#gen{font-size:1.25rem!important;letter-spacing:.12em!important;
   color:#fbf2d0!important;text-shadow:2px 2px 0 var(--ink-k);box-shadow:5px 5px 0 var(--ink-k)!important}
 #gen.charging{box-shadow:5px 5px 0 var(--ink-k),0 0 18px rgba(220,60,30,.65)!important}
 html[data-theme="dark"] button.sec{background:linear-gradient(#41472f,#2b2f1f)!important}
-#theme,#net-btn,.vol-btn{border-radius:50%!important}
+#theme,#net-btn,#v3d-btn,.vol-btn{border-radius:50%!important}
 
 /* Tabs: Karteireiter, aktiver steht hervor */
 .tabs{gap:6px!important;max-width:520px!important}
