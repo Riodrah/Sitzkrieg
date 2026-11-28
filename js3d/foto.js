@@ -77,8 +77,11 @@ export function muzzlePts(key, side) {
     let objs = (u.muzzles && u.muzzles.length ? [...new Set(u.muzzles)] : null) || (u.weapon ? [u.weapon] : u.mortar ? [u.mortar] : null);
     if (!objs) { objs = []; g.traverse(o => { if (o.userData.muzzle && !objs.length) objs.push(o); }); }
     const toImg = v => { const n = v.clone().project(cam); return { x: (n.x + 1) / 2, y: (1 - n.y) / 2 }; };
-    return objs.map(o => { const m = o.userData.muzzle || new THREE.Vector3(0, 0, .5), p = o.localToWorld(m.clone()), q = o.localToWorld(m.clone().multiplyScalar(.5));
-      const P = toImg(p), Q = toImg(q); return { x: P.x, y: P.y, a: Math.atan2((P.y - Q.y), (P.x - Q.x) * a) * 180 / Math.PI }; });
+    const bb = new THREE.Box3().setFromObject(g), c = bb.getCenter(new THREE.Vector3()), T = toImg(new THREE.Vector3(c.x, bb.max.y, c.z)), B = toImg(new THREE.Vector3(c.x, bb.min.y, c.z));
+    const out = objs.map(o => { const m = o.userData.muzzle || new THREE.Vector3(0, 0, .5), p = o.localToWorld(m.clone()), q = o.localToWorld(m.clone().multiplyScalar(.5));
+      const P = toImg(p), Q = toImg(q); return { x: P.x, y: P.y, bx: Q.x, by: Q.y, a: Math.atan2((P.y - Q.y), (P.x - Q.x) * a) * 180 / Math.PI }; });
+    out.box = { cx: (T.x + B.x) / 2, top: T.y, bottom: B.y };   // Figur: Mitte, Kopf oben, Füße unten (für Fähigkeits-Effekte)
+    return out;
   }).catch(() => []);
   MUZ.set(k, pr); return pr;
 }

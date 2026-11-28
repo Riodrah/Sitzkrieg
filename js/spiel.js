@@ -194,21 +194,35 @@ function fx2dSounds(fx,kind,abil,base){
   }
 }
 // Die Effekte sind für eine feste Bildlage gezeichnet. Hier werden sie auf die echte Mündung im Standbild verschoben (Lage aus dem 3D-Modell).
+// General: Fähigkeits-Effekte (Aura, Stern, Kreuz, Flammen, Staub …) auf die echte Figur legen. Gezeichnet für eine Figur in der Mitte, Kopf bei 14 %, Füße bei 88 %.
+function genBody(art,fx,layer,im,mz,AW,AH,src){
+  const b=mz&&mz.box; if(!b||!im.offsetWidth) return; let L=0,T=0; for(let e=im;e&&e!==art;e=e.offsetParent){ L+=e.offsetLeft; T+=e.offsetTop; }
+  const cx=(L+b.cx*im.offsetWidth)/AW*100, top=(T+b.top*im.offsetHeight)/AH*100, bot=(T+b.bottom*im.offsetHeight)/AH*100, k=(bot-top)/74, kx=k;
+  const BODY=new Set(['aura','plus','ray','star','flag','fl','smoke','sp','dust','bags']), els=layer.querySelectorAll('.fx');
+  fx.forEach((f,i)=>{ if(!BODY.has(f.t)||!els[i]||f.x<15||f.x>85) return; if(src.some(s=>Math.hypot(f.x-s.x,f.y-s.y)<9)) return;
+    els[i].style.left=(cx+(f.x-50)*kx)+'%'; els[i].style.top=(top+(f.y-14)*k)+'%'; });
+}
 async function fx2dAim(art,fx,layer,kind){
   const imgs=[...art.querySelectorAll('img.f3d')]; if(!imgs.length||!window.fig2dMuzzle){ layer.style.visibility=''; return; }
   try{
     const mz=await Promise.all(imgs.map(i=>window.fig2dMuzzle(i))), AW=art.clientWidth, AH=art.clientHeight; if(!AW) throw 0;   // Layout-Maße: unabhängig vom Wackeln/Umdrehen der Karte
     const tgt=imgs.map((im,i)=>{ const m=mz[i]&&mz[i][0]; if(!m||!im.offsetWidth) return null; let L=0,T=0; for(let e=im;e&&e!==art;e=e.offsetParent){ L+=e.offsetLeft; T+=e.offsetTop; }
-      return { x:(L+m.x*im.offsetWidth)/AW*100, y:(T+m.y*im.offsetHeight)/AH*100, a:m.a }; });
-    const src=[]; for(const f of fx) if((f.t==='flash'||(kind==='flame'&&f.t==='fl'))&&!src.some(s=>s.x===f.x&&s.y===f.y)) src.push({x:f.x,y:f.y});   // Flammenwerfer: die Flamme ist der Startpunkt
+      return { x:(L+m.x*im.offsetWidth)/AW*100, y:(T+m.y*im.offsetHeight)/AH*100, bx:(L+(m.bx??m.x)*im.offsetWidth)/AW*100, by:(T+(m.by??m.y)*im.offsetHeight)/AH*100, a:m.a }; });
+    const src=[]; const WHOLE=kind==='flame'||kind==='mech';   // Flammenwerfer/Mechaniker: ganzer Effekt sitzt an der Düse bzw. Schlüsselspitze
+    const GEN=kind==='general';
+    if(WHOLE) src.push({x:fx[0].x,y:fx[0].y});
+    else for(const f of fx) if(f.t==='flash'&&!src.some(s=>s.x===f.x&&s.y===f.y)&&(!GEN||Math.hypot(f.x-67,f.y-22)<14)) src.push({x:f.x,y:f.y});   // General: nur der eigene Schuss (Pistole/MG), nicht die Schüsse anderer Trupps
+    if(GEN) genBody(art,fx,layer,imgs[0],mz[0],AW,AH,src);
     if(!src.length) throw 0;
     const pairs=[]; if(src.length===imgs.length){ const ss=[...src].sort((a,b)=>a.x-b.x); ss.forEach((s,i)=>tgt[i]&&pairs.push([s,tgt[i]])); } else if(tgt[0]) pairs.push([src[0],tgt[0]]);
     for(const [s] of pairs){ const t0=fx.find(f=>(f.t==='tr'||f.t==='fl')&&Math.hypot(f.x-s.x,f.y-s.y)<6); s.a0=t0?(t0.a||0):0; }
     const els=layer.querySelectorAll('.fx'), MOVE=new Set(['flash','tr','cas','sp','smoke','fl']);
     fx.forEach((f,i)=>{ if(!MOVE.has(f.t)||!els[i]) return; let best=null,bd=9;
-      if(kind==='flame') best=pairs[0];   // ganzer Feuerstrahl (Flammen, Rauch, Funken) wandert mit
-      else for(const p of pairs){ const d=Math.hypot(f.x-p[0].x,f.y-p[0].y); if(d<bd){ bd=d; best=p; } } if(!best) return;
-      const [s,t]=best; els[i].style.left=(f.x+t.x-s.x)+'%'; els[i].style.top=(f.y+t.y-s.y)+'%';
+      if(WHOLE) best=pairs[0];   // ganzer Feuerstrahl (Flammen, Rauch, Funken) wandert mit
+      else { if(f.t==='cas') bd=22; for(const p of pairs){ const d=Math.hypot(f.x-p[0].x,f.y-p[0].y); if(d<bd){ bd=d; best=p; } } } if(!best) return;
+      const [s,t]=best;
+      if(f.t==='cas'){ els[i].style.left=t.bx+'%'; els[i].style.top=t.by+'%'; return; }   // Hülse fliegt am Verschluss (Mitte der Waffe) heraus
+      els[i].style.left=(f.x+t.x-s.x)+'%'; els[i].style.top=(f.y+t.y-s.y)+'%';
       if(f.t==='tr'||f.t==='fl') els[i].style.setProperty('--a',(t.a+((f.a||0)-s.a0))+'deg'); });
   }catch(e){}
   layer.style.visibility='';

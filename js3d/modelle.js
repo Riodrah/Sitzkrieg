@@ -327,6 +327,7 @@ function soldier(side, kind = 'rif', opt = {}) {
       // großer Schraubenschlüssel: langer Griff, offenes Maul oben, Ringende unten
       const w = G(); P(w, RB(.075, .62, .04, .015), LGR, 0, .26, 0);
       P(w, TO(.11, .04, Math.PI * 1.45), LGR, 0, .64, 0, 0, 0, .85); P(w, TO(.065, .03), LGR, 0, -.07, 0);
+      w.userData.muzzle = new THREE.Vector3(0, .68, 0);   // Spitze (Maul) – dort glitzert das Reparieren
       if (body.userData.glb) w.scale.setScalar(1.3); w.rotation.x = 1.0; u.armR.userData.hand.add(w); u.tool = w; break;   // nach oben gehalten, gut sichtbar
     }
     case 'medic': {

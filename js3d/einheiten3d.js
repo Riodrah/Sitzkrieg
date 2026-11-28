@@ -294,7 +294,7 @@ function act(v) {
       break;
     }
     case 'mech': for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => clank(1 + (i % 2) * .12));   // metallisches Klopfen beim Reparieren
-      if (gs) gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x }, { x: d.armR.rotation.x + .9, duration: .14, yoyo: true, repeat: 5, ease: 'power2.in' }); for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => { const p = d.tool.getWorldPosition(new THREE.Vector3()); for (let k = 0; k < 8; k++) fx.spawn({ p, v: V((Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3), life: .4, s0: .06, s1: .02, c0: 0xffe090, c1: 0xff7020, g: -9 }); fx.flash(p, 1.5); }); break;
+      if (gs) gs.fromTo(d.armR.rotation, { x: d.armR.rotation.x }, { x: d.armR.rotation.x + .9, duration: .14, yoyo: true, repeat: 5, ease: 'power2.in' }); for (let i = 0; i < 3; i++) fx.at(.14 + i * .28, () => { const p = d.tool.localToWorld(d.tool.userData.muzzle.clone()); for (let k = 0; k < 8; k++) fx.spawn({ p, v: V((Math.random() - .5) * 3, Math.random() * 3, (Math.random() - .5) * 3), life: .4, s0: .06, s1: .02, c0: 0xffe090, c1: 0xff7020, g: -9 }); fx.flash(p, 1.5); }); break;
     case 'medic': {   // verwundeten Kameraden heilen: der steht auf, springt zweimal und rennt rechts raus
       if (v.patient) v.stage.remove(v.patient);
       const ax = new THREE.Box3().setFromObject(v.root).max.x, pt = buildUnit('rif', v.side); v.patient = pt; v.stage.add(pt);

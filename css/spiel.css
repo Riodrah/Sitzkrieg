@@ -244,7 +244,7 @@ button.sec:not(:disabled):active,button.big:not(:disabled):not(.gp-next):active,
 .gcard.fx-shake{animation:flipIn .28s cubic-bezier(.2,.7,.3,1) both,fxShake .45s ease-out .5s}
 @keyframes fxShake{0%,100%{translate:0 0}15%{translate:-7px 3px}30%{translate:6px -2px}45%{translate:-4px 2px}60%{translate:3px 0}80%{translate:-1px 0}}
 .fxl{position:absolute;inset:0;pointer-events:none;z-index:4}
-.fx{position:absolute;display:block;opacity:0;animation-delay:var(--d)!important;animation-fill-mode:both!important}
+.fx{position:absolute;display:block;opacity:0;animation-delay:var(--d)!important;animation-fill-mode:forwards!important}   /* vor dem Schuss unsichtbar (Grundzustand), nichts schwebt vorher in der Luft */
 /* Mündungsfeuer: gezackter Stern */
 .fx-flash{width:30px;height:30px;margin:-15px 0 0 -15px;background:radial-gradient(circle,#fffbe0 0 22%,#ffd84a 40%,#ff8a2a 70%);
   clip-path:polygon(50% 0,60% 35%,100% 20%,70% 50%,100% 80%,60% 65%,50% 100%,40% 65%,0 80%,30% 50%,0 20%,40% 35%);
