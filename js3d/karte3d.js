@@ -203,6 +203,10 @@ function placeProp(g, e, w, d) {
   const blocked = new Uint8Array(nx * nz);
   for (const b of obs) for (let i = Math.max(0, Math.floor((b.min.x - M + cx) / cs)); i <= Math.min(nx - 1, Math.floor((b.max.x + M + cx) / cs)); i++)
     for (let j = Math.max(0, Math.floor((b.min.z - M + cz) / cs)); j <= Math.min(nz - 1, Math.floor((b.max.z + M + cz) / cs)); j++) blocked[j * nx + i] = 1;
+  // Zufällige Lieblings-Drehung je Karte (fest pro Karte + Feld + Teil, damit beim Neuzeichnen nichts springt): jedes Mal anders ausgerichtet
+  let h = ((typeof current !== 'undefined' && current ? current.seed | 0 : 0) ^ Math.imul(Math.round(g.position.x * 100) + 7919, 2654435761) ^ Math.imul(Math.round(g.position.z * 100) + 104729, 2246822519) ^ Math.imul(Math.round(x0 * 100) + Math.round(z0 * 37) + 13, 3266489917)) >>> 0;
+  const rnd = () => { h = (Math.imul(h ^ (h >>> 15), 1 | h) + 0x6D2B79F5) >>> 0; return ((h ^ (h >>> 14)) >>> 0) / 4294967296; };
+  const kPen = Array.from({ length: 8 }, () => rnd() * .6);   // < 1: ein freier Platz geht immer vor
   let best = null;
   for (let k = 0; k < 8; k++) {
     e.rotation.y = k * Math.PI / 4; e.position.set(0, e.position.y, 0); g.updateMatrixWorld(true);
@@ -215,7 +219,7 @@ function placeProp(g, e, w, d) {
     const oi = Math.floor(cx / cs), oj = Math.floor(cz / cs);   // Zelle der Feldmitte
     for (let si = -oi - i0; si + oi + i1 < nx; si++) for (let sj = -oj - j0; sj + oj + j1 < nz; sj++) {
       let s = 0; for (const [i, j] of cells) s += blocked[(j + sj + oj) * nx + (i + si + oi)];
-      const x = si * cs, z = sj * cs, sc = s + Math.hypot(x - x0, z - z0) * .01 + (k ? .002 : 0);   // möglichst frei, sonst nah an der alten Ecke
+      const x = si * cs, z = sj * cs, sc = s + Math.hypot(x - x0, z - z0) * .01 + kPen[k];   // möglichst frei, sonst nah an der alten Ecke
       if (!best || sc < best.sc) best = { sc, x, z, ry: k * Math.PI / 4 };
     }
   }

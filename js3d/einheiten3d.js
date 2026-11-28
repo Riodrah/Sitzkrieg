@@ -200,7 +200,7 @@ function recoil(obj, axis = 'z', amt = .06, t = .12) { if (!obj || !window.gsap)
 // Töne der Spielkarten nur, wenn der Spiel-Tab gerade offen ist
 const onSpiel = () => { const t = document.getElementById('tab-spiel'); return !!t && !t.hidden && !document.hidden; };
 window.onSpiel = onSpiel;
-const snd = (n, rate = 1) => { if (!onSpiel()) return; try { if (typeof Sounds !== 'undefined') Sounds.play(n, rate); } catch (e) { } };
+const snd = (n, rate = 1, vol = 1) => { if (!onSpiel()) return; try { if (typeof Sounds !== 'undefined') Sounds.play(n, rate, vol); } catch (e) { } };
 let FCTX = null;
 // Kleiner metallischer Reparaturklang: Schlüssel trifft Stahl (kurzer Anschlag + nachklingende, unharmonische Obertöne)
 function clank(pitch = 1) {
@@ -234,7 +234,7 @@ function act(v) {
   if (v.tKind) { const ht = kind.startsWith('general:') ? (kind === 'general:Veteran' ? .55 : .45) : HIT_T[kind]; if (ht) fx.at(ht, () => breakApart(v, v.tKind === 'tank' ? 1.3 : 1)); }
   const aim = v.tKind ? hit.clone().setY(v.tKind === 'tank' ? .45 : .75) : null;
   const u = units[0], d = u.userData, gs = window.gsap;
-  const shots = (obj, n, gap, o = {}) => { for (let i = 0; i < n; i++) fx.at((o.d || .25) + i * gap, () => { if (o.snd !== false) { if (o.burst) { if (i % 17 === 0) snd('mg', .95 + Math.random() * .1); } else snd(o.snd || 'gewehr', .9 + Math.random() * .2); } const m0 = muzzleOf(obj), p = m0.p, dir = aim ? aim.clone().add(V(0, (Math.random() - .5) * .3, (Math.random() - .5) * .3)).sub(p).normalize() : m0.dir; fx.muzzle(p, dir, o.k || 1); fx.tracer(p, dir, aim ? p.distanceTo(aim) + .3 : (o.len || 4), o.speed || 20); if (o.cas) fx.casing(p.clone().addScaledVector(dir, -.4)); recoil(obj, o.axis || 'z', o.rec || .05); if (o.hit) fx.at(.18, () => { fx.explosion(hit.clone(), .35); snd('explosion', 1.3); }); }); };
+  const shots = (obj, n, gap, o = {}) => { for (let i = 0; i < n; i++) fx.at((o.d || .25) + i * gap, () => { if (o.snd !== false) { if (o.burst) { if (i % 2 === 0) setTimeout(() => snd('mg', .86 + Math.random() * .28, .45), Math.random() * 45); } else snd(o.snd || 'gewehr', .9 + Math.random() * .2); } const m0 = muzzleOf(obj), p = m0.p, dir = aim ? aim.clone().add(V(0, (Math.random() - .5) * .3, (Math.random() - .5) * .3)).sub(p).normalize() : m0.dir; fx.muzzle(p, dir, o.k || 1); fx.tracer(p, dir, aim ? p.distanceTo(aim) + .3 : (o.len || 4), o.speed || 20); if (o.cas) fx.casing(p.clone().addScaledVector(dir, -.4)); recoil(obj, o.axis || 'z', o.rec || .05); if (o.hit) fx.at(.18, () => { fx.explosion(hit.clone(), .35); snd('explosion', 1.3); }); }); };
   const ground = (obj, dist) => { const { p, dir } = muzzleOf(obj); return p.clone().addScaledVector(dir.setY(0).normalize(), dist).setY(.05); };
   if (kind.startsWith('general:')) {
     const ab = kind.slice(8), head = V(0, 1.9, 0);
@@ -458,9 +458,15 @@ let PR = null, pop3 = null;
 function popRenderer() { if (PR) return PR; PR = new THREE.WebGLRenderer({ antialias: true, alpha: true }); PR.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); PR.outputColorSpace = THREE.SRGBColorSpace; PR.toneMapping = THREE.NeutralToneMapping; PR.toneMappingExposure = .9; PR.domElement.className = 'turn3d'; return PR; }
 const SOUND_OF = { rif: 'gewehr', sniper: 'scharf', shotgun: 'schrot', mg: 'mg', general: 'pistole', pzf: 'abschuss', mortar: 'abschuss', grenade: 'explosion', schwer: 'kanone', leicht: 'kanone', art: 'kanone', flak: 'abschuss', trans: 'mg', krad: 'mg', flieger: 'plane' };
 let lastSlot = null;   // zuletzt angetippter Armee-Eintrag (für das Fahrzeug-Popup)
-document.addEventListener('click', e => { const s = e.target.closest('.slot[data-veh]'); if (s) lastSlot = { key: s.dataset.veh, side: s.closest('.army')?.classList.contains('al') ? 'al' : 'de', t: performance.now() }; }, true);
+document.addEventListener('click', e => { const s = e.target.closest('.slot[data-veh]'); if (s) lastSlot = { key: s.dataset.veh, side: s.closest('.army')?.classList.contains('al') ? 'al' : 'de', t: performance.now(), el: s }; }, true);
 async function popupTurntable() {
   const popEl = document.getElementById('pop'); if (!popEl || popEl.hidden) { pop3 = null; return; }
+  if (lite()) {   // 2D-Modus: keine Drehbühne; beim Fahrzeug stattdessen das kleine Bild aus der Übersicht oben ins Popup
+    pop3 = null; popEl.querySelectorAll('.turn-host:not(.pic2d)').forEach(h => h.remove());
+    const body = document.getElementById('pop-body'), art = lastSlot && performance.now() - lastSlot.t < 1500 && lastSlot.el.querySelector('.slot-art');
+    if (body && art && !body.querySelector('.pic2d')) { const h = document.createElement('div'); h.className = 'turn-host pic2d'; h.append(art.cloneNode(true)); body.prepend(h); }
+    return;
+  }
   let img = [...popEl.querySelectorAll('img.f3d')].find(i => URLKEY.has(i.getAttribute('src'))), key, side, host;
   if (img) { [key, side] = URLKEY.get(img.getAttribute('src')); host = img;
     if ((img.clientHeight || 0) < 90) {   // kleines Symbol im Popup: Bühne groß oben drüber

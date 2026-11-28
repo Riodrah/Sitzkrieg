@@ -23,15 +23,15 @@ const Sounds=(()=>{
     })).catch(()=>{})));
     return loading;
   }
-  function fallback(name,rate=1){ try{ const a=new Audio(SOUND_FILES[name]); if(NO_STACK[name]){ busy[name]=true; a.onended=a.onerror=()=>{ busy[name]=false; }; } a.volume=Math.min(1,SOUND_VOL[name]*(FULL_VOL[name]?1:MASTER_VOL)); a.preservesPitch=false; a.mozPreservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=rate; a.play().catch(()=>{}); }catch(e){} }
-  function play(name,rate=1){
+  function fallback(name,rate=1,vol=1){ try{ const a=new Audio(SOUND_FILES[name]); if(NO_STACK[name]){ busy[name]=true; a.onended=a.onerror=()=>{ busy[name]=false; }; } a.volume=Math.min(1,SOUND_VOL[name]*vol*(FULL_VOL[name]?1:MASTER_VOL)); a.preservesPitch=false; a.mozPreservesPitch=false; a.webkitPreservesPitch=false; a.playbackRate=rate; a.play().catch(()=>{}); }catch(e){} }
+  function play(name,rate=1,vol=1){   // vol: zusätzlicher Faktor (z. B. leiser bei vielen überlagerten Schüssen)
     if(MASTER_VOL<=0 && !FULL_VOL[name]) return;
     if(NO_STACK[name] && busy[name]) return;
-    if(!ctx){ init(); fallback(name,rate); return; }     // erster Klick: sofort per <audio>, danach Web Audio
+    if(!ctx){ init(); fallback(name,rate,vol); return; }     // erster Klick: sofort per <audio>, danach Web Audio
     if(ctx.state==='suspended') ctx.resume();
-    const x=buf[name]; if(!x){ fallback(name,rate); return; }
+    const x=buf[name]; if(!x){ fallback(name,rate,vol); return; }
     const src=ctx.createBufferSource(); src.buffer=x; src.playbackRate.value=rate;
-    if(NO_STACK[name]){ busy[name]=true; src.onended=()=>{ busy[name]=false; }; } const g=ctx.createGain(); g.gain.value=SOUND_VOL[name]*(FULL_VOL[name]?1:MASTER_VOL);
+    if(NO_STACK[name]){ busy[name]=true; src.onended=()=>{ busy[name]=false; }; } const g=ctx.createGain(); g.gain.value=SOUND_VOL[name]*vol*(FULL_VOL[name]?1:MASTER_VOL);
     src.connect(g).connect(ctx.destination); src.start();
   }
   // Bau-Geräusch bei neuer Karte: läuft in Schleife, bis die 3D-Karte fertig zusammengebaut ist (ohne 3D: einmal durch)
