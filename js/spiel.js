@@ -172,7 +172,7 @@ function playFx(gc,c,replay){
   if(abil) art.classList.add('g-'+abil.normalize('NFD').replace(/[^A-Za-z]/g,'').toLowerCase());
   const fx=abil?(FX_GEN[abil]||FX.general):(FX[kind]||[]), base=replay?0:.26;
   if(fx.length) art.insertAdjacentHTML('beforeend','<span class="fxl">'+fx.map(f=>fxEl(f,base)).join('')+'</span>');
-  if(fx.length&&!is3dOn()){ fx2dSounds(fx,kind,abil,base); const l=art.querySelector('.fxl'); if(art.querySelector('img.f3d')){ l.style.visibility='hidden'; fx2dAim(art,fx,l); setTimeout(()=>{ l.style.visibility=''; },400); } }   // 2D: Sound + Effekte an die echte Mündung
+  if(fx.length&&!is3dOn()){ fx2dSounds(fx,kind,abil,base); const l=art.querySelector('.fxl'); if(art.querySelector('img.f3d')){ l.style.visibility='hidden'; fx2dAim(art,fx,l,kind); setTimeout(()=>{ l.style.visibility=''; },400); } }   // 2D: Sound + Effekte an die echte Mündung
   if(FX_SHAKE.has(kind)||FX_SHAKE.has(abil)) gc.classList.add('fx-shake');
   if(replay) gc.classList.add('no-flip'); else gc.classList.add('flip-in');
   if(kind==='flieger'&&typeof Sounds!=='undefined') try{ setTimeout(()=>{ if(spielOffen()) Sounds.play('plane'); },replay?0:250); }catch(e){}
@@ -194,19 +194,20 @@ function fx2dSounds(fx,kind,abil,base){
   }
 }
 // Die Effekte sind für eine feste Bildlage gezeichnet. Hier werden sie auf die echte Mündung im Standbild verschoben (Lage aus dem 3D-Modell).
-async function fx2dAim(art,fx,layer){
+async function fx2dAim(art,fx,layer,kind){
   const imgs=[...art.querySelectorAll('img.f3d')]; if(!imgs.length||!window.fig2dMuzzle){ layer.style.visibility=''; return; }
   try{
     const mz=await Promise.all(imgs.map(i=>window.fig2dMuzzle(i))), AW=art.clientWidth, AH=art.clientHeight; if(!AW) throw 0;   // Layout-Maße: unabhängig vom Wackeln/Umdrehen der Karte
     const tgt=imgs.map((im,i)=>{ const m=mz[i]&&mz[i][0]; if(!m||!im.offsetWidth) return null; let L=0,T=0; for(let e=im;e&&e!==art;e=e.offsetParent){ L+=e.offsetLeft; T+=e.offsetTop; }
       return { x:(L+m.x*im.offsetWidth)/AW*100, y:(T+m.y*im.offsetHeight)/AH*100, a:m.a }; });
-    const src=[]; for(const f of fx) if(f.t==='flash'&&!src.some(s=>s.x===f.x&&s.y===f.y)) src.push({x:f.x,y:f.y});
+    const src=[]; for(const f of fx) if((f.t==='flash'||(kind==='flame'&&f.t==='fl'))&&!src.some(s=>s.x===f.x&&s.y===f.y)) src.push({x:f.x,y:f.y});   // Flammenwerfer: die Flamme ist der Startpunkt
     if(!src.length) throw 0;
     const pairs=[]; if(src.length===imgs.length){ const ss=[...src].sort((a,b)=>a.x-b.x); ss.forEach((s,i)=>tgt[i]&&pairs.push([s,tgt[i]])); } else if(tgt[0]) pairs.push([src[0],tgt[0]]);
-    for(const [s] of pairs){ const t0=fx.find(f=>f.t==='tr'&&Math.hypot(f.x-s.x,f.y-s.y)<6); s.a0=t0?(t0.a||0):0; }
+    for(const [s] of pairs){ const t0=fx.find(f=>(f.t==='tr'||f.t==='fl')&&Math.hypot(f.x-s.x,f.y-s.y)<6); s.a0=t0?(t0.a||0):0; }
     const els=layer.querySelectorAll('.fx'), MOVE=new Set(['flash','tr','cas','sp','smoke','fl']);
     fx.forEach((f,i)=>{ if(!MOVE.has(f.t)||!els[i]) return; let best=null,bd=9;
-      for(const p of pairs){ const d=Math.hypot(f.x-p[0].x,f.y-p[0].y); if(d<bd){ bd=d; best=p; } } if(!best) return;
+      if(kind==='flame') best=pairs[0];   // ganzer Feuerstrahl (Flammen, Rauch, Funken) wandert mit
+      else for(const p of pairs){ const d=Math.hypot(f.x-p[0].x,f.y-p[0].y); if(d<bd){ bd=d; best=p; } } if(!best) return;
       const [s,t]=best; els[i].style.left=(f.x+t.x-s.x)+'%'; els[i].style.top=(f.y+t.y-s.y)+'%';
       if(f.t==='tr'||f.t==='fl') els[i].style.setProperty('--a',(t.a+((f.a||0)-s.a0))+'deg'); });
   }catch(e){}

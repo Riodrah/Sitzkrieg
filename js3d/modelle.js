@@ -340,7 +340,7 @@ function soldier(side, kind = 'rif', opt = {}) {
       P(kit, RB(.1, .19, .27, .02), 0xc0141a, 0, -.12, 0);                                    // Koffer
       P(kit, RB(.03, .05, .1, .01), 0x1b1b1b, 0, .0, 0);                                      // Griff
       for (const sx of [-1, 1]) { P(kit, RB(.006, .12, .035, .002), WHT, sx * .052, -.12, 0); P(kit, RB(.006, .035, .12, .002), WHT, sx * .052, -.12, 0); }   // weißes Plus auf beiden Seiten
-      kit.scale.setScalar((body.userData.glb ? 1.2 : 1) * 3); hl.attach(kit); u.kit = kit; break;   // Koffer dreifach groß
+      kit.scale.setScalar((body.userData.glb ? 1.2 : 1) * 2.2); hl.attach(kit); u.kit = kit; break;   // Koffer gut doppelt groß (hängt am Griff, bleibt in der Hand)
     }
     case 'general': {
       if (opt.veteran) { hold(mgun(), .04, .8, .24, -.05); u.armL = arm(body, -1, ARM, -1.2, .2); u.armR = arm(body, 1, ARM, -.75); break; }

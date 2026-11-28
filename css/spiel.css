@@ -269,10 +269,10 @@ button.sec:not(:disabled):active,button.big:not(:disabled):not(.gp-next):active,
 .fx-cas{width:4px;height:9px;border-radius:1px;background:#d9b45a;border:1px solid #1f1a14;animation:fxCas .6s cubic-bezier(.3,.6,.6,1)}
 @keyframes fxCas{0%{opacity:1;transform:translate(0,0) rotate(0)}50%{opacity:1;transform:translate(-18px,-22px) rotate(300deg)}100%{opacity:0;transform:translate(-30px,20px) rotate(600deg)}}
 /* Flammenstrahl */
-.fx-fl{width:46%;height:46px;margin-top:-6px;border-radius:40% 60% 60% 40%/50%;transform-origin:0 50%;
+.fx-fl{width:46%;height:46px;margin-top:-23px;border-radius:40% 60% 60% 40%/50%;transform-origin:0 50%;
   background:radial-gradient(ellipse at 0 50%,#fffbe0 0 10%,#ffd84a 26%,#ff8a2a 50%,#c8452c 70%,rgba(200,69,44,0) 78%);
-  filter:drop-shadow(0 0 6px #ff8a2a);transform:scale(var(--s));animation:fxFlame .75s ease-out}
-@keyframes fxFlame{0%{opacity:0;transform:scaleX(0) scaleY(.6)}25%{opacity:1;transform:scaleX(calc(var(--s)*1.05)) scaleY(1.1) rotate(-3deg)}55%{opacity:1;transform:scaleX(var(--s)) scaleY(.9) rotate(3deg)}100%{opacity:0;transform:scaleX(calc(var(--s)*1.1)) scaleY(1.3) translateY(-6px)}}
+  filter:drop-shadow(0 0 6px #ff8a2a);transform:rotate(var(--a)) scale(var(--s));animation:fxFlame .75s ease-out}
+@keyframes fxFlame{0%{opacity:0;transform:rotate(var(--a)) scaleX(0) scaleY(.6)}25%{opacity:1;transform:rotate(var(--a)) scaleX(calc(var(--s)*1.05)) scaleY(1.1) rotate(-3deg)}55%{opacity:1;transform:rotate(var(--a)) scaleX(var(--s)) scaleY(.9) rotate(3deg)}100%{opacity:0;transform:rotate(var(--a)) scaleX(calc(var(--s)*1.1)) scaleY(1.3) translateY(-6px)}}   /* --a: Richtung der Düse */
 /* Geschoss im Bogen (Granate, Mörsergranate) */
 .fx-sh{width:11px;height:14px;margin:-7px 0 0 -5px;border-radius:50% 50% 35% 35%;background:#4a4238;border:2px solid #1f1a14;animation:fxShell .6s cubic-bezier(.3,.5,.6,1)}
 @keyframes fxShell{0%{opacity:1;transform:translate(0,0) rotate(0)}50%{opacity:1;transform:translate(calc(var(--dx)*.5),calc(var(--dy)*.5 - 40px)) rotate(200deg)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(400deg)}}
@@ -290,7 +290,7 @@ button.sec:not(:disabled):active,button.big:not(:disabled):not(.gp-next):active,
 /* Bombe fällt */
 .fx-bomb{width:9px;height:18px;margin-left:-4px;border-radius:50% 50% 30% 30%;background:#4a4238;border:2px solid #1f1a14;animation:fxBomb .5s cubic-bezier(.5,0,.9,.6)}
 @keyframes fxBomb{0%{opacity:1;transform:translateY(0)}100%{opacity:1;transform:translateY(46px)}}
-@media (orientation:landscape) and (max-height:560px){ .fx-boom{width:40px;height:40px;margin:-20px 0 0 -20px} .fx-fl{height:30px} }
+@media (orientation:landscape) and (max-height:560px){ .fx-boom{width:40px;height:40px;margin:-20px 0 0 -20px} .fx-fl{height:30px;margin-top:-15px} }
 @media (prefers-reduced-motion:reduce){ .fxl,.gcard.fx-shake{display:none;animation:none!important} }
 
 /* ===== Generals-Effekte je Fähigkeit + Wiederholen per Antippen ===== */
