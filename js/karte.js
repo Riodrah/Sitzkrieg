@@ -174,7 +174,9 @@ function render(){
   const port=isPortrait();
   const dR = port?COLS:ROWS, dC = port?ROWS:COLS;
   map.style.gridTemplateColumns=`repeat(${dC},minmax(0,1fr))`;
-  map.style.maxWidth = (port ? Math.min(420, dC*140) : Math.min(1000, dC*125)) + 'px';
+  let mw = port ? Math.min(420, dC*140) : Math.min(1000, dC*125);
+  if(!port && innerWidth>=1200 && innerHeight>=700) mw = Math.max(mw, Math.min(dC*240, (innerHeight-380)*dC/dR, innerWidth*.9));   // Fernseher/Monitor quer: Karte so groß, wie die Höhe erlaubt
+  map.style.maxWidth = mw + 'px';
   map.classList.toggle('has-edges', !!(markOn && window.CUR_MISSION));
   // Quadratische Felder: Zeilenhöhe = Spaltenbreite
   const ms=getComputedStyle(map);

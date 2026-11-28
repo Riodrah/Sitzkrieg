@@ -1,0 +1,41 @@
+/* ================= QUERFORMAT (Handy, Tablet, Fernseher) =================
+   Wird als letztes geladen. Greift NUR im Querformat – das Hochformat bleibt unverändert. */
+
+/* ---------- Alle Querformate: Missionsziel-Schild nicht über den Feldnamen legen ---------- */
+@media (orientation:landscape){
+  .cell .obj-flex{bottom:auto!important;top:46%!important;transform:translate(-50%,-50%) rotate(-3deg)!important}
+}
+
+/* ---------- Handy quer (und Handy auf den Fernseher gespiegelt): flacher Kopf, Inhalt sofort sichtbar ---------- */
+@media (orientation:landscape) and (max-height:560px){
+  main{margin:4px auto!important;padding:8px 12px!important}
+  h1{font-size:1.55rem!important;margin:2px 0 6px!important;padding:0 120px!important;letter-spacing:.1em!important}
+  .sub{display:none!important}                                         /* roter Stempel: im Querformat zu viel Höhe */
+  /* Ecken-Knöpfe in eine Reihe oben, damit nichts in die Inhalte ragt */
+  #net-btn{top:6px!important;left:8px!important;width:40px!important;height:40px!important}
+  #theme{top:6px!important;right:8px!important;width:40px!important;height:40px!important}
+  .vol{top:6px!important;right:54px!important}
+  .vol-btn{width:40px!important;height:40px!important}
+  .vol-pop,.mu-pop{top:46px!important}
+  .tabs{max-width:min(560px,calc(100% - 220px))!important;margin:0 auto 10px!important}
+  .tabs button{padding:6px 2px!important;font-size:.72rem!important}
+  .tabs button.on{transform:translateY(-2px) rotate(-1deg)!important}
+  /* Spiel-Tab: Titel ist dort ausgeblendet, Tabs stehen ganz oben zwischen den Ecken-Knöpfen */
+  body.on-spiel .tabs{max-width:min(520px,calc(100% - 220px))!important;margin:0 auto 6px!important}
+  .gcard{margin-right:84px;grid-template-columns:minmax(150px,28%) 1fr!important}   /* Bildspalte etwas breiter, damit lange Namen passen */
+  .gc-name{font-size:.86rem!important;letter-spacing:.02em!important;line-height:1.1;overflow-wrap:normal;word-break:normal}
+}
+
+/* ---------- Großes Querformat (Fernseher, Monitor): Platz nutzen, alles größer ---------- */
+@media (orientation:landscape) and (min-width:1200px) and (min-height:700px){
+  html{font-size:clamp(16px,1.05vw,26px)}
+  main{max-width:min(94vw,1800px)!important}
+  #tab-spiel{max-width:min(92vw,1500px)!important}
+  .mapmission{max-width:none!important}
+  .tabs{max-width:min(900px,60vw)!important}
+  .tabs button{font-size:1rem!important;padding:12px 6px!important}
+  .gp-next{width:clamp(96px,6vw,140px)!important;height:clamp(96px,6vw,140px)!important}
+  .gp{max-width:min(62vw,1100px)!important}                            /* Spielkarte auf dem Fernseher breiter */
+  .gc-art{height:clamp(190px,22vh,300px)!important}
+  #regelwerk{max-width:min(78vw,1200px)!important}
+}
