@@ -378,7 +378,7 @@ function flashbang(){
 // ---------- Tag/Nacht ----------
 function setTheme(t){
   document.documentElement.setAttribute('data-theme',t);
-  $('theme').textContent = t==='dark' ? '☀' : '☾';
+  $('theme').textContent = t==='dark' ? '☾' : '☀';   // zeigt den aktuellen Modus: Mond im Dark Mode, Sonne im hellen
   $('theme').title = t==='dark' ? 'Tag-Modus' : 'Nacht-Modus';
   const m=document.querySelector('meta[name=theme-color]'); if(m) m.content = t==='dark' ? '#060704' : '#1b1e14';
 }

@@ -1,8 +1,9 @@
 // 3D-Spieltisch: die generierte Karte als Klemmbaustein-Diorama
 // Jedes Feld = Bauplatte mit Gelände-Modell; Missionsziele als Fahnen, Startkanten als farbige Streifen.
 // Antippen eines Feldes öffnet dieselbe Info wie in der 2D-Karte. Gerendert wird nur bei Bewegung (spart Akku).
-import { THREE, brick, slope, plastic, insignia, buildUnit } from './modelle.js';
+import { THREE, brick, slope, plastic, insignia, buildUnit, lowDetail } from './modelle.js';
 import { OrbitControls } from '../vendor/OrbitControls.js';
+import { mergeGeometries } from '../vendor/BufferGeometryUtils.js';
 import { GF } from './glbfig.js';
 import { lights, envFor } from './foto.js';
 import { TERRAIN, terrain, G, HALF, sandbag, R } from './gelaende.js';
@@ -249,15 +250,16 @@ function tag(text, bg, fg = '#fff') {
 let S3 = null;
 function setup(box) {
   const r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true, logarithmicDepthBuffer: true });   // Bild bleibt stehen, auch wenn nur bei Bewegung gezeichnet wird
-  r.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.NeutralToneMapping; r.toneMappingExposure = .95;
+  r.setPixelRatio(Math.min(devicePixelRatio || 1, 1.5)); r.outputColorSpace = THREE.SRGBColorSpace; r.toneMapping = THREE.NeutralToneMapping; r.toneMappingExposure = .95;
   r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
   box.appendChild(r.domElement);
   const scene = new THREE.Scene(); lights(scene, r);
-  const sun = new THREE.DirectionalLight(0xfff0d8, 1.6); sun.position.set(-6, 12, 8); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  for (const l of [...scene.children]) { if (l.isDirectionalLight) scene.remove(l); else if (l.isHemisphereLight) l.intensity = .6; } scene.environmentIntensity = .35;   // nur Sonne + etwas Himmelslicht: sonst hellen die Aufhelllichter jeden Schatten weg
+  const sun = new THREE.DirectionalLight(0xfff0d8, 3.2); sun.position.set(-9, 8.5, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 }); sun.shadow.bias = -.0008; scene.add(sun);
   const cam = new THREE.PerspectiveCamera(35, 1, 1, 120);   // größeres near = genauere Tiefe (weniger Flackern am Handy)
   const ctl = new OrbitControls(cam, r.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = 1.35; ctl.minDistance = 4; ctl.maxDistance = 40; ctl.enablePan = true;
-  ctl.addEventListener('change', () => S3 && (S3.dirty = true));
+  ctl.addEventListener('change', () => S3 && (S3.now = true));
   S3 = { r, scene, cam, ctl, box, board: null, dirty: true, flags: [], smokes: [] };
   // Antippen = Feld-Info (nur wenn nicht gezogen wurde)
   let down = null;
@@ -288,7 +290,7 @@ function setup(box) {
       if (L.sway.length || L.sweep.length || L.flutter.length || L.wave.length || L.puffs.length) S3.dirty = true;
     }
     for (const f of S3.flags) { const p = f.userData.cloth.geometry.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i) + .25; p.setZ(i, Math.sin(t * 5 + x * 9) * .05 * x * 2); } p.needsUpdate = true; S3.dirty = true; }
-    if (S3.dirty) { r.render(scene, cam); S3.dirty = false; } })();
+    if (S3.now || (S3.dirty && t - (S3.lastT || 0) > 1 / 31)) { r.render(scene, cam); S3.dirty = S3.now = false; S3.lastT = t; } })();   // Rauch, Fahnen, Bäume: 30 Bilder/s reichen; Drehen/Zoomen sofort
 }
 function stepDrops(t) {
   let busy = false;
@@ -298,12 +300,48 @@ function stepDrops(t) {
       p.c.visible = e > 0; p.c.position.copy(p.base).addScaledVector(p.dv, f); p.c.rotation.y = p.r0 + p.spin * f; }
     if (t < dr.end) busy = true; else for (const s of dr.sprites) s.visible = true;
   }
-  if (!busy) { for (const dr of S3.drops) for (const p of dr.pcs) { p.c.visible = true; p.c.position.copy(p.base); p.c.rotation.y = p.r0; } S3.drops = []; }
+  if (!busy) { for (const dr of S3.drops) for (const p of dr.pcs) { p.c.visible = true; p.c.position.copy(p.base); p.c.rotation.y = p.r0; } S3.drops = []; bake(S3.board); }
+  S3.dirty = true;
+}
+// ---------- Leistung: fertige Karte zusammenfassen ----------
+// Nach dem Aufbau werden alle unbeweglichen Teile eines Feldes je Material zu einem Modell verschmolzen und alle Noppen
+// gleicher Art zu einem Instanz-Modell. Aus ~17.000 Zeichenaufrufen pro Bild werden wenige hundert. Bewegte Teile bleiben einzeln.
+function bake(board) {
+  const L = S3.live || {}, dyn = new Set([...S3.flags, ...S3.smokes.map(p => p.m), ...(L.sway || []), ...(L.sweep || []), ...(L.flutter || []), ...(L.wave || []), ...(L.puffs || []).map(p => p.m)]);
+  board.updateMatrixWorld(true);
+  const m4 = new THREE.Matrix4(), mi = new THREE.Matrix4();
+  for (const root of [board, ...board.children.filter(c => c.userData.pi != null)]) {
+    const inv = new THREE.Matrix4().copy(root.matrixWorld).invert(), geos = new Map(), inst = new Map(), kill = [];
+    (function walk(o) {
+      for (const c of o.children) {
+        if (dyn.has(c) || c.isSprite || !c.visible || (c !== root && c.userData.pi != null)) continue;
+        const mat = c.material, geo = c.geometry;
+        const ok = c.isMesh && !c.isSkinnedMesh && !c.children.length && !Array.isArray(mat) && !mat.transparent && geo && !Object.keys(geo.morphAttributes).length && Object.values(geo.attributes).every(a => !a.isInterleavedBufferAttribute) && geo.attributes.position && geo.attributes.normal;
+        if (!ok) { walk(c); continue; }
+        if (c.isInstancedMesh) {   // Noppen: gleiche Form + Farbe = ein Instanz-Modell
+          const k = geo.uuid + mat.uuid + c.castShadow; let b = inst.get(k); if (!b) inst.set(k, b = { geo, mat, cast: c.castShadow, recv: c.receiveShadow, ms: [] });
+          m4.multiplyMatrices(inv, c.matrixWorld); for (let i = 0; i < c.count; i++) { c.getMatrixAt(i, mi); b.ms.push(m4.clone().multiply(mi)); }
+        } else {
+          const names = ['position', 'normal'].concat(geo.attributes.uv ? ['uv'] : []), k = mat.uuid + c.castShadow + c.receiveShadow + names.join();
+          const g = new THREE.BufferGeometry(); for (const n of names) g.setAttribute(n, geo.attributes[n].clone());
+          const n = geo.attributes.position.count; g.setIndex(geo.index ? Array.from(geo.index.array) : Array.from({ length: n }, (_, i) => i));
+          m4.multiplyMatrices(inv, c.matrixWorld); g.applyMatrix4(m4);
+          let b = geos.get(k); if (!b) geos.set(k, b = { mat, cast: c.castShadow, recv: c.receiveShadow, list: [] }); b.list.push(g);
+        }
+        kill.push(c);
+      }
+    })(root);
+    for (const c of kill) { c.parent.remove(c); if (!c.isInstancedMesh) c.geometry.dispose(); }   // Einzelteile von der Grafikkarte nehmen
+    for (const b of geos.values()) { const g = b.list.length > 1 ? mergeGeometries(b.list) : b.list[0]; if (!g) continue; for (const x of b.list) if (x !== g) x.dispose();
+      const m = new THREE.Mesh(g, b.mat); m.castShadow = b.cast; m.receiveShadow = b.recv; m.matrixAutoUpdate = false; root.add(m); }
+    for (const b of inst.values()) { const m = new THREE.InstancedMesh(b.geo, b.mat, b.ms.length); b.ms.forEach((x, i) => m.setMatrixAt(i, x)); m.castShadow = b.cast; m.receiveShadow = b.recv; m.computeBoundingSphere(); root.add(m); }
+  }
   S3.dirty = true;
 }
 function resize() { if (!S3) return; const w = S3.box.clientWidth, h = S3.box.clientHeight; if (!w || !h) return; S3.r.setSize(w, h, false); S3.cam.aspect = w / h; S3.cam.updateProjectionMatrix(); S3.dirty = true; }
 
-function build() {
+function build() { lowDetail(true); try { build0(); } finally { lowDetail(false); } }
+function build0() {
   if (typeof current === 'undefined' || !current || current.error) return;
   const box = document.getElementById('map3d'); if (!box) return;
   if (!S3) setup(box);
@@ -378,6 +416,7 @@ function build() {
       const t = -len / 2 + (i + .5) * len / n; a.position.set(long ? x + t : x, .22, long ? z : z + t); board.add(a); }
     if (k === 0) { const ins = insignia(board, side, .36, x, .21, z, 0, -HALF); ins.position.set(long ? x + len * .5 / n : x, .22, long ? z : z + len * .5 / n); }
   });
+  board.traverse(o => { if (o.isMesh) o.castShadow = o.receiveShadow = true; });   // alles wirft Schatten (auch Einheiten, Fahnen, Masten)
   // Lebendige Details einsammeln: wiegende Bäume, Suchscheinwerfer, Windsack, Schaumkronen, Rauch aus dem Lok-Schornstein
   board.updateMatrixWorld(true);
   // Lebendige Details zuerst einsammeln (Lage des Schornsteins, bevor die Aufbau-Animation die Steine anhebt)
@@ -407,12 +446,13 @@ function build() {
     S3.dropT0 = performance.now() / 1000; stepDrops(0);
     try { if (typeof Sounds !== 'undefined' && Sounds.buildHold) Sounds.buildHold(Math.max(...S3.drops.map(d => d.end)) - .2); } catch (e) { }   // Bau-Geräusch läuft bis zum letzten Stein
   }
+  if (!S3.drops.length) bake(board);   // ohne Aufbau-Animation sofort zusammenfassen
   // Kamera: Anflug von schräg oben
   const asp = box.clientWidth / Math.max(1, box.clientHeight), target = new THREE.Vector3(0, 0, 0), dist = Math.max(W, D) * (port ? 1.95 : 1.05 * Math.max(1, 1.8 / asp));   // Abstand passt sich dem Fenster an (auch gedreht)
   const endPos = port ? new THREE.Vector3(0, dist * .66, dist * .56) : new THREE.Vector3(0, dist * .62, dist * .62);
   if (port) board.rotation.y = HALF;
   S3.ctl.target.copy(target);
-  if (window.gsap && !matchMedia('(prefers-reduced-motion:reduce)').matches) { S3.cam.position.set(endPos.x - dist * .6, endPos.y * 1.6, endPos.z + dist * .4); gsap.to(S3.cam.position, { x: endPos.x, y: endPos.y, z: endPos.z, duration: 1.1, ease: 'power3.out', onUpdate: () => { S3.cam.lookAt(target); S3.dirty = true; } }); }
+  if (window.gsap && !matchMedia('(prefers-reduced-motion:reduce)').matches) { S3.cam.position.set(endPos.x - dist * .6, endPos.y * 1.6, endPos.z + dist * .4); gsap.to(S3.cam.position, { x: endPos.x, y: endPos.y, z: endPos.z, duration: 1.1, ease: 'power3.out', onUpdate: () => { S3.cam.lookAt(target); S3.now = true; } }); }
   else S3.cam.position.copy(endPos);
   S3.cam.lookAt(target); S3.dirty = true;
 }

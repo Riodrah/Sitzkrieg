@@ -14,8 +14,9 @@ export function plastic(c, o = {}) {
 }
 const GEO = new Map();
 const cached = (k, f) => { if (!GEO.has(k)) GEO.set(k, f()); return GEO.get(k); };
-const RB = (w, h, d, r = .025) => cached(`rb${w},${h},${d},${r}`, () => new RoundedBoxGeometry(w, h, d, 3, Math.min(r, w / 2.2, h / 2.2, d / 2.2)));
-const CY = (rt, rb, h, s = 24, ...a) => cached(`cy${rt},${rb},${h},${s},${a}`, () => new THREE.CylinderGeometry(rt, rb, h, s, 1, ...a));
+let LOD = 0; export function lowDetail(v) { LOD = v ? 1 : 0; }   // 3D-Karte: viele Steine aus der Ferne – weniger Rundungs-Segmente
+const RB = (w, h, d, r = .025) => cached(`rb${w},${h},${d},${r},${LOD}`, () => new RoundedBoxGeometry(w, h, d, LOD ? 1 : 3, Math.min(r, w / 2.2, h / 2.2, d / 2.2)));
+const CY = (rt, rb, h, s = 24, ...a) => { if (LOD) s = Math.max(8, s >> 1); return cached(`cy${rt},${rb},${h},${s},${a}`, () => new THREE.CylinderGeometry(rt, rb, h, s, 1, ...a)); };
 const SP = (r, ...a) => cached(`sp${r},${a}`, () => new THREE.SphereGeometry(r, 24, 16, ...a));
 const TO = (r, t, arc = Math.PI * 2) => cached(`to${r},${t},${arc}`, () => new THREE.TorusGeometry(r, t, 10, 24, arc));
 const HALF = Math.PI / 2;
