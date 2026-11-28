@@ -258,8 +258,8 @@ function setup(box) {
   r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
   box.appendChild(r.domElement);
   const scene = new THREE.Scene(); lights(scene, r);
-  for (const l of [...scene.children]) { if (l.isDirectionalLight) scene.remove(l); else if (l.isHemisphereLight) l.intensity = .6; } scene.environmentIntensity = .35;   // nur Sonne + etwas Himmelslicht: sonst hellen die Aufhelllichter jeden Schatten weg
-  const sun = new THREE.DirectionalLight(0xfff0d8, 3.2); sun.position.set(-9, 8.5, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  for (const l of [...scene.children]) { if (l.isDirectionalLight) scene.remove(l); else if (l.isHemisphereLight) l.intensity = .38; } scene.environmentIntensity = .2;   // nur Sonne + etwas Himmelslicht: sonst hellen die Aufhelllichter jeden Schatten weg
+  const sun = new THREE.DirectionalLight(0xfff0d8, 3.6); sun.position.set(-9, 8.5, 6); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -12, right: 12, top: 12, bottom: -12, near: 1, far: 40 }); sun.shadow.bias = -.0008; scene.add(sun);
   const cam = new THREE.PerspectiveCamera(35, 1, 1, 120);   // größeres near = genauere Tiefe (weniger Flackern am Handy)
   const ctl = new OrbitControls(cam, r.domElement); ctl.enableDamping = true; ctl.maxPolarAngle = 1.35; ctl.minDistance = 4; ctl.maxDistance = 40; ctl.enablePan = true;
