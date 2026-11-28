@@ -460,12 +460,14 @@ let PR = null, pop3 = null;
 function popRenderer() { if (PR) return PR; PR = new THREE.WebGLRenderer({ antialias: true, alpha: true }); PR.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); PR.outputColorSpace = THREE.SRGBColorSpace; PR.toneMapping = THREE.NeutralToneMapping; PR.toneMappingExposure = .9; PR.domElement.className = 'turn3d'; return PR; }
 const SOUND_OF = { rif: 'gewehr', sniper: 'scharf', shotgun: 'schrot', mg: 'mg', general: 'pistole', pzf: 'abschuss', mortar: 'abschuss', grenade: 'explosion', schwer: 'kanone', leicht: 'kanone', art: 'kanone', flak: 'abschuss', trans: 'mg', krad: 'mg', flieger: 'plane' };
 let lastSlot = null;   // zuletzt angetippter Armee-Eintrag (für das Fahrzeug-Popup)
-document.addEventListener('click', e => { const s = e.target.closest('.slot[data-veh]'); if (s) lastSlot = { key: s.dataset.veh, side: s.closest('.army')?.classList.contains('al') ? 'al' : 'de', t: performance.now(), el: s }; }, true);
+document.addEventListener('click', e => { if (e.target.closest('.slot[data-squad]')) lastSlot = null; const s = e.target.closest('.slot[data-veh]'); if (s) lastSlot = { key: s.dataset.veh, side: s.closest('.army')?.classList.contains('al') ? 'al' : 'de', t: performance.now(), el: s }; }, true);
+// Fahrzeug-Popup? Nur wenn der letzte Klick ein Fahrzeug war UND das Popup gerade ein Fahrzeug zeigt (schnelles Durchklicken: kein altes Bild)
+const vehPop = ls => !!ls && performance.now() - ls.t < 1500 && /^Fahrzeug/.test(document.getElementById('pop-k')?.textContent || '');
 async function popupTurntable() {
   const popEl = document.getElementById('pop'); if (!popEl || popEl.hidden) { pop3 = null; return; }
   if (lite()) {   // 2D-Modus: keine Drehbühne; beim Fahrzeug stattdessen das kleine Bild aus der Übersicht oben ins Popup
     pop3 = null; popEl.querySelectorAll('.turn-host:not(.pic2d)').forEach(h => h.remove());
-    const body = document.getElementById('pop-body'), art = lastSlot && performance.now() - lastSlot.t < 1500 && lastSlot.el.querySelector('.slot-art');
+    const body = document.getElementById('pop-body'), art = vehPop(lastSlot) && lastSlot.el.querySelector('.slot-art');
     if (body && art && !body.querySelector('.pic2d')) { const h = document.createElement('div'); h.className = 'turn-host pic2d'; h.append(art.cloneNode(true)); body.prepend(h); }
     return;
   }
@@ -474,7 +476,7 @@ async function popupTurntable() {
     if ((img.clientHeight || 0) < 90) {   // kleines Symbol im Popup: Bühne groß oben drüber
       const body = popEl.querySelector('.pop-card'), first = body && body.querySelector('.pu-unit, #pop-body'); if (!first) return;
       host = body.querySelector('.turn-host'); if (!host) { host = document.createElement('div'); host.className = 'turn-host'; first.before(host); } } }
-  else if (lastSlot && performance.now() - lastSlot.t < 1500) {   // Fahrzeug: Bühne oben ins Popup setzen
+  else if (vehPop(lastSlot)) {   // Fahrzeug: Bühne oben ins Popup setzen
     const body = document.getElementById('pop-body'); if (!body || body.querySelector('.turn-host')) return;
     host = document.createElement('div'); host.className = 'turn-host'; body.prepend(host); key = lastSlot.key; side = lastSlot.side;
   } else return;
