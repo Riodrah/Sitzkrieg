@@ -64,3 +64,21 @@ async function render(key, side, h) {
   r.setPixelRatio(2); r.setSize(w, h, false); r.setClearColor(0, 0); r.render(scene, cam);
   return await new Promise(res => r.domElement.toBlob(res, 'image/png'));
 }
+// Mündungen im Standbild (für die 2D-Schusseffekte): gleiche Drehung und Kamera wie render(), Lage als Anteil des Bildes (0..1)
+const MUZ = new Map();
+export function muzzlePts(key, side) {
+  const k = key + '|' + side; if (MUZ.has(k)) return MUZ.get(k);
+  const pr = GFREADY.then(() => {
+    const g = buildUnit(key, side), u = g.userData, type = u.type, a = ASPECT[type];
+    g.rotation.y = type === 'inf' ? .55 : type === 'air' ? -.35 : -.25;
+    const cam = new THREE.PerspectiveCamera(26, a);
+    frame(cam, g, a, type === 'inf' ? 1.1 : 1.0, type === 'inf' ? new THREE.Vector3(.15, .3, 1.3) : new THREE.Vector3(.25, .5, 1.25));
+    g.updateMatrixWorld(true); cam.updateMatrixWorld(true);
+    let objs = (u.muzzles && u.muzzles.length ? [...new Set(u.muzzles)] : null) || (u.weapon ? [u.weapon] : u.mortar ? [u.mortar] : null);
+    if (!objs) { objs = []; g.traverse(o => { if (o.userData.muzzle && !objs.length) objs.push(o); }); }
+    const toImg = v => { const n = v.clone().project(cam); return { x: (n.x + 1) / 2, y: (1 - n.y) / 2 }; };
+    return objs.map(o => { const m = o.userData.muzzle || new THREE.Vector3(0, 0, .5), p = o.localToWorld(m.clone()), q = o.localToWorld(m.clone().multiplyScalar(.5));
+      const P = toImg(p), Q = toImg(q); return { x: P.x, y: P.y, a: Math.atan2((P.y - Q.y), (P.x - Q.x) * a) * 180 / Math.PI }; });
+  }).catch(() => []);
+  MUZ.set(k, pr); return pr;
+}

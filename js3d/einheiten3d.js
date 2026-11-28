@@ -6,6 +6,8 @@ import { cachedURL } from './bildspeicher.js';
 let THREE, buildUnit, brick, plastic, photo, lights, frame, Fx, heavyP = null;
 const heavy = () => heavyP || (heavyP = Promise.all([import('./modelle.js'), import('./foto.js'), import('./effekte.js'), import('./glbfig.js')])
   .then(async ([m, f, e, gl]) => { await gl.GFREADY; ({ THREE, buildUnit, brick, plastic } = m); ({ photo, lights, frame } = f); ({ Fx } = e); }));   // erst wenn das Soldaten-Modell da ist
+// 2D-Schusseffekte: wo im Standbild liegt die Mündung? (Spiel-Tab im 2D-Modus fragt das ab)
+window.fig2dMuzzle = async img => { const k = URLKEY.get(img.getAttribute('src')); if (!k) return null; const f = await import('./foto.js'); return f.muzzlePts(k[0], k[1]); };
 const getPhoto = async (k, side, h) => (await cachedURL(k, side, h)) || (await heavy(), await photo(k, side, h));
 
 const KEYS = ['pzf', 'general', 'sniper', 'shotgun', 'mg', 'flame', 'grenade', 'mortar', 'mine', 'mech', 'medic', 'schwer', 'leicht', 'trans', 'art', 'krad', 'flieger'];
@@ -539,7 +541,7 @@ function kaminStop() { if (!KAMIN) return; const { src, g } = KAMIN, c = FCTX; K
 function mountFire() {
   const wrap = document.querySelector('#tab-spiel .gcard.refire .fire-wrap'); if (!wrap) { fire3 = null; kaminStop(); return; }
   if (fire3 && fire3.wrap === wrap) return;
-  if (lite()) { kaminStop(); return; }   // 2D-Modus: gezeichnetes Feuer statt 3D
+  if (lite()) { kaminStop(); fire3 = null; wrap.classList.remove('has3d'); wrap.querySelector('canvas.fire3d')?.remove(); return; }   // 2D-Modus: gezeichnetes Feuer statt 3D
   if (!THREE) { heavy().then(mountFire); return; }
   if (!FR) { FR = new THREE.WebGLRenderer({ antialias: true, alpha: true }); FR.setPixelRatio(Math.min(devicePixelRatio || 1, 2)); FR.outputColorSpace = THREE.SRGBColorSpace; FR.toneMapping = THREE.NeutralToneMapping; FR.toneMappingExposure = 1; FR.domElement.className = 'fire3d'; }
   wrap.classList.add('has3d'); wrap.appendChild(FR.domElement);

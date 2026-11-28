@@ -172,9 +172,45 @@ function playFx(gc,c,replay){
   if(abil) art.classList.add('g-'+abil.normalize('NFD').replace(/[^A-Za-z]/g,'').toLowerCase());
   const fx=abil?(FX_GEN[abil]||FX.general):(FX[kind]||[]), base=replay?0:.26;
   if(fx.length) art.insertAdjacentHTML('beforeend','<span class="fxl">'+fx.map(f=>fxEl(f,base)).join('')+'</span>');
+  if(fx.length&&!is3dOn()){ fx2dSounds(fx,kind,abil,base); const l=art.querySelector('.fxl'); if(art.querySelector('img.f3d')){ l.style.visibility='hidden'; fx2dAim(art,fx,l); setTimeout(()=>{ l.style.visibility=''; },400); } }   // 2D: Sound + Effekte an die echte Mündung
   if(FX_SHAKE.has(kind)||FX_SHAKE.has(abil)) gc.classList.add('fx-shake');
   if(replay) gc.classList.add('no-flip'); else gc.classList.add('flip-in');
   if(kind==='flieger'&&typeof Sounds!=='undefined') try{ setTimeout(()=>{ if(spielOffen()) Sounds.play('plane'); },replay?0:250); }catch(e){}
+}
+// ---------- 2D-Modus: Sound und Zielen der gezeichneten Schusseffekte ----------
+const is3dOn=()=>{ try{ return localStorage.getItem('sitzkrieg-3d')==='1'; }catch(e){ return false; } };
+const FX_SND={rif:'gewehr',sniper:'scharf',shotgun:'schrot',mg:'mg',general:'pistole',pzf:'abschuss',mortar:'abschuss',schwer:'kanone',leicht:'kanone',art:'kanone',flak:'abschuss',trans:'mg',krad:'mg'};
+const FX_BURST=new Set(['mg','trans','krad','Veteran']);
+// Jedes Mündungsfeuer bekommt seinen Schuss-Sound, jede Explosion ihren Knall. Dauerfeuer: viele MG-Sounds überlagert, versetzt und verschieden hoch.
+function fx2dSounds(fx,kind,abil,base){
+  if(typeof Sounds==='undefined') return;
+  const name=FX_SND[kind]||'gewehr', burst=FX_BURST.has(kind)||FX_BURST.has(abil); let n=0;
+  for(const f of fx){
+    const t=((f.d||0)+base)*1000;
+    if(f.t==='flash'){ const i=n++;
+      if(burst){ if(i%2===0) setTimeout(()=>{ if(spielOffen()) Sounds.play('mg',.86+Math.random()*.28,.45); },t+Math.random()*45); }
+      else setTimeout(()=>{ if(spielOffen()) Sounds.play(name,.9+Math.random()*.2); },t); }
+    else if(f.t==='boom') setTimeout(()=>{ if(spielOffen()) Sounds.play('explosion',1+Math.random()*.2); },t);
+  }
+}
+// Die Effekte sind für eine feste Bildlage gezeichnet. Hier werden sie auf die echte Mündung im Standbild verschoben (Lage aus dem 3D-Modell).
+async function fx2dAim(art,fx,layer){
+  const imgs=[...art.querySelectorAll('img.f3d')]; if(!imgs.length||!window.fig2dMuzzle){ layer.style.visibility=''; return; }
+  try{
+    const mz=await Promise.all(imgs.map(i=>window.fig2dMuzzle(i))), AW=art.clientWidth, AH=art.clientHeight; if(!AW) throw 0;   // Layout-Maße: unabhängig vom Wackeln/Umdrehen der Karte
+    const tgt=imgs.map((im,i)=>{ const m=mz[i]&&mz[i][0]; if(!m||!im.offsetWidth) return null; let L=0,T=0; for(let e=im;e&&e!==art;e=e.offsetParent){ L+=e.offsetLeft; T+=e.offsetTop; }
+      return { x:(L+m.x*im.offsetWidth)/AW*100, y:(T+m.y*im.offsetHeight)/AH*100, a:m.a }; });
+    const src=[]; for(const f of fx) if(f.t==='flash'&&!src.some(s=>s.x===f.x&&s.y===f.y)) src.push({x:f.x,y:f.y});
+    if(!src.length) throw 0;
+    const pairs=[]; if(src.length===imgs.length){ const ss=[...src].sort((a,b)=>a.x-b.x); ss.forEach((s,i)=>tgt[i]&&pairs.push([s,tgt[i]])); } else if(tgt[0]) pairs.push([src[0],tgt[0]]);
+    for(const [s] of pairs){ const t0=fx.find(f=>f.t==='tr'&&Math.hypot(f.x-s.x,f.y-s.y)<6); s.a0=t0?(t0.a||0):0; }
+    const els=layer.querySelectorAll('.fx'), MOVE=new Set(['flash','tr','cas','sp','smoke','fl']);
+    fx.forEach((f,i)=>{ if(!MOVE.has(f.t)||!els[i]) return; let best=null,bd=9;
+      for(const p of pairs){ const d=Math.hypot(f.x-p[0].x,f.y-p[0].y); if(d<bd){ bd=d; best=p; } } if(!best) return;
+      const [s,t]=best; els[i].style.left=(f.x+t.x-s.x)+'%'; els[i].style.top=(f.y+t.y-s.y)+'%';
+      if(f.t==='tr'||f.t==='fl') els[i].style.setProperty('--a',(t.a+((f.a||0)-s.a0))+'deg'); });
+  }catch(e){}
+  layer.style.visibility='';
 }
 // Bild der Einheit antippen -> Animation nochmal
 document.addEventListener('click',e=>{ const a=e.target.closest('#tab-spiel .gcard .gc-art'); if(!a||S.end!==null||!S.cur) return; playFx(a.closest('.gcard'),S.cur,true); });
@@ -188,7 +224,7 @@ const FX={
   rif:[...R(5,i=>({t:'flash',x:18+i*14,y:44,d:i*.09})),...R(5,i=>({t:'tr',x:22+i*14,y:44,d:i*.09+.02,len:40,a:-14}))],
   sniper:[{t:'sp',x:58,y:36,d:0},{t:'flash',x:66,y:38,d:.25,s:1.2},{t:'tr',x:66,y:38,d:.27,len:60,a:-3},{t:'boom',x:96,y:34,d:.42,s:.5},{t:'cas',x:52,y:46,d:.3}],
   shotgun:[{t:'flash',x:64,y:42,d:0,s:1.5},...R(5,i=>({t:'tr',x:64,y:42,d:.02,len:28,a:-18+i*8})),{t:'cas',x:52,y:48,d:.1},{t:'smoke',x:66,y:36,d:.1}],
-  mg:[...R(7,i=>({t:'flash',x:66,y:40,d:i*.08,s:.9})),...R(7,i=>({t:'tr',x:66,y:40,d:i*.08+.02,len:44,a:-8+(i%3)*4})),...R(5,i=>({t:'cas',x:54,y:46,d:i*.1+.05}))],
+  mg:[...R(28,i=>({t:'flash',x:66,y:40,d:i*.08,s:.9})),...R(28,i=>({t:'tr',x:66,y:40,d:i*.08+.02,len:44,a:-8+(i%3)*4})),...R(14,i=>({t:'cas',x:54,y:46,d:i*.16+.05}))],   // langer Feuerstoß (4x)
   flame:[{t:'fl',x:68,y:24,d:0},{t:'fl',x:68,y:24,d:.18,s:1.15},{t:'smoke',x:88,y:16,d:.4},{t:'smoke',x:94,y:30,d:.55},...R(4,i=>({t:'sp',x:84+i*3,y:30+i*6,d:.3+i*.08}))],
   grenade:[{t:'sh',x:58,y:12,d:0,dx:120,dy:40},{t:'boom',x:88,y:56,d:.55,s:1.3},...R(6,i=>({t:'sp',x:88,y:56,d:.6,a:i*60})),{t:'smoke',x:86,y:44,d:.75}],
   mortar:[{t:'flash',x:72,y:30,d:.05,s:1.2,a:-80},{t:'sh',x:72,y:26,d:.05,dx:20,dy:-140},{t:'smoke',x:70,y:22,d:.15},{t:'boom',x:90,y:58,d:.75,s:1.4},{t:'smoke',x:88,y:44,d:.9}],
@@ -199,7 +235,7 @@ const FX={
   general:[{t:'flash',x:68,y:18,d:0},{t:'tr',x:70,y:18,d:.02,len:30,a:-20}],
   schwer:[{t:'flash',x:88,y:26,d:.05,s:1.6},{t:'tr',x:90,y:26,d:.07,len:20,a:0},{t:'smoke',x:86,y:20,d:.15,s:1.3},{t:'dust',x:30,y:86,d:0},{t:'dust',x:60,y:86,d:.05},{t:'cas',x:52,y:30,d:.2}],
   leicht:[{t:'flash',x:84,y:32,d:.05,s:1.2},{t:'tr',x:86,y:32,d:.07,len:20,a:0},{t:'smoke',x:82,y:26,d:.15},{t:'dust',x:40,y:86,d:0}],
-  krad:[...R(4,i=>({t:'dust',x:18-i*4,y:84,d:i*.08})),...R(4,i=>({t:'flash',x:12,y:34,d:.4+i*.07,s:.7,a:180})),...R(4,i=>({t:'tr',x:10,y:34,d:.42+i*.07,len:20,a:180+8}))],
+  krad:[...R(4,i=>({t:'dust',x:18-i*4,y:84,d:i*.08})),...R(16,i=>({t:'flash',x:12,y:34,d:.4+i*.08,s:.7,a:180})),...R(16,i=>({t:'tr',x:12,y:34,d:.42+i*.08,len:20,a:180+8-(i%3)*4}))],   // langer Feuerstoß (4x)
   trans:[...R(4,i=>({t:'dust',x:20-i*4,y:84,d:i*.08})),{t:'smoke',x:10,y:72,d:.3},{t:'smoke',x:6,y:66,d:.45}],
   art:[{t:'flash',x:94,y:18,d:.05,s:2},{t:'smoke',x:90,y:14,d:.12,s:1.6},{t:'smoke',x:80,y:20,d:.2},{t:'dust',x:30,y:86,d:.08},{t:'dust',x:50,y:88,d:.1}],
   flieger:[{t:'bomb',x:44,y:56,d:.55},{t:'bomb',x:54,y:56,d:.65},{t:'boom',x:40,y:92,d:1.0,s:1.2},{t:'boom',x:62,y:92,d:1.1,s:1.2},{t:'smoke',x:50,y:82,d:1.2}]
